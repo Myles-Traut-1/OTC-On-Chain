@@ -36,16 +36,16 @@ contract Orderbook is ReentrancyGuard {
 
     /// @notice Asset definition with amount semantics.
     struct TokenAmount {
-        address token; // ERC-20 / ERC-721 / ERC-1155 wrapper handled by adapters
-        uint256 amount; // Quantity (ERC-721 uses amount = tokenId)
+        address token;
+        uint256 amount;
     }
 
     /// @notice Time and risk controls applied to an order.
     struct Constraints {
         uint256 minFillAmount; // Minimum base asset fill (offer side)
         uint256 maxSlippageBps; // Max basis point deviation allowed by settlement engine
-        uint64 validFrom; // Optional start timestamp (0 = immediately active)
-        uint64 validUntil; // Expiration timestamp
+        uint64 validFrom;
+        uint64 validUntil;
     }
 
     /// @notice Canonical order payload hashed for EIP-712 signatures.
@@ -123,8 +123,8 @@ contract Orderbook is ReentrancyGuard {
         TokenAmount memory _offer,
         address _requestedToken,
         Constraints memory _constraints
-    ) external checkZeroAddress(_requestedToken) validateTokenAmounts(_offer) nonReentrant {
-        bytes32 _orderId = keccak256(abi.encode(msg.sender, nonce, _offer.token, _offer.amount, _requestedToken));
+    ) external checkZeroAddress(_requestedToken) validateTokenAmounts(_offer) nonReentrant returns (bytes32 _orderId) {
+        _orderId = keccak256(abi.encode(msg.sender, nonce, _offer.token, _offer.amount, _requestedToken));
 
         if (orderStatusById[_orderId] != OrderStatus.None) {
             revert Orderbook__OrderAlreadyExists(_orderId);
