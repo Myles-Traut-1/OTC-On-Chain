@@ -78,7 +78,6 @@ contract Orderbook is ReentrancyGuard {
     event TokenOfferCreated(
         bytes32 indexed orderId,
         address indexed maker,
-        address settlement,
         TokenAmount offer,
         address requestedToken,
         Constraints constraints
@@ -118,17 +117,14 @@ contract Orderbook is ReentrancyGuard {
                         EXTERNAL FUINCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function createTokenOffer(
-        address _settlementAddress,
-        TokenAmount memory _offer,
-        address _requestedToken,
-        Constraints memory _constraints
-    ) external checkZeroAddress(_requestedToken) validateTokenAmounts(_offer) nonReentrant returns (bytes32 _orderId) {
+    function createTokenOffer(TokenAmount memory _offer, address _requestedToken, Constraints memory _constraints)
+        external
+        checkZeroAddress(_requestedToken)
+        validateTokenAmounts(_offer)
+        nonReentrant
+        returns (bytes32 _orderId)
+    {
         _orderId = keccak256(abi.encode(msg.sender, nonce, _offer.token, _offer.amount, _requestedToken));
-
-        if (orderStatusById[_orderId] != OrderStatus.None) {
-            revert Orderbook__OrderAlreadyExists(_orderId);
-        }
 
         _validateConstraints(_constraints);
 
@@ -146,7 +142,7 @@ contract Orderbook is ReentrancyGuard {
         orderStatusById[_orderId] = OrderStatus.Open;
         nonce++;
 
-        emit TokenOfferCreated(_orderId, msg.sender, _settlementAddress, _offer, _requestedToken, _constraints);
+        emit TokenOfferCreated(_orderId, msg.sender, _offer, _requestedToken, _constraints);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -171,7 +167,7 @@ contract Orderbook is ReentrancyGuard {
     function _validateConstraints(Constraints memory _constraints) internal view {
         if (
             _constraints.minFillAmount == 0 || _constraints.maxSlippageBps == 0
-                || _constraints.validFrom < block.timestamp || _constraints.validUntil < block.timestamp
+                || _constraints.validFrom < block.timestamp || _constraints.validUntil <= _constraints.validFrom
         ) {
             revert Orderbook__InvalidConstraints();
         }
