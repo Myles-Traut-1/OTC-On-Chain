@@ -66,10 +66,10 @@ contract CreateTokenOfferTest is Test {
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OrderCreated(
+        emit Orderbook.TokenOfferCreated(
             expectedOrderId, maker, address(escrow), offer, address(requestedToken), constraints
         );
-        bytes32 orderId = orderbook.createTokenOrder(address(escrow), offer, address(requestedToken), constraints);
+        bytes32 orderId = orderbook.createTokenOffer(address(escrow), offer, address(requestedToken), constraints);
         vm.stopPrank();
 
         assertEq(offeredToken.balanceOf(maker), INITIAL_MAKER_BALANCE - OFFER_AMOUNT);

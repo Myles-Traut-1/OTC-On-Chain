@@ -75,7 +75,7 @@ contract Orderbook is ReentrancyGuard {
     event SettlementEngineSet(address indexed settlementEngine);
     event EscrowSet(address indexed escrow);
 
-    event OrderCreated(
+    event TokenOfferCreated(
         bytes32 indexed orderId,
         address indexed maker,
         address settlement,
@@ -118,7 +118,7 @@ contract Orderbook is ReentrancyGuard {
                         EXTERNAL FUINCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function createTokenOrder(
+    function createTokenOffer(
         address _settlementAddress,
         TokenAmount memory _offer,
         address _requestedToken,
@@ -146,7 +146,7 @@ contract Orderbook is ReentrancyGuard {
         orderStatusById[_orderId] = OrderStatus.Open;
         nonce++;
 
-        emit OrderCreated(_orderId, msg.sender, _settlementAddress, _offer, _requestedToken, _constraints);
+        emit TokenOfferCreated(_orderId, msg.sender, _settlementAddress, _offer, _requestedToken, _constraints);
     }
 
     /*//////////////////////////////////////////////////////////////
