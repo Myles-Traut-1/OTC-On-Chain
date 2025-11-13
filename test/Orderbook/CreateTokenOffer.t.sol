@@ -1,52 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {Test} from "forge-std/Test.sol";
+import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
-import {Escrow} from "../../src/contracts/Escrow.sol";
-import {SettlementEngine} from "../../src/contracts/SettlementEngine.sol";
 
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
-
-contract CreateTokenOfferTest is Test {
-    Orderbook public orderbook;
-    Escrow public escrow;
-    SettlementEngine public settlementEngine;
-
-    ERC20Mock public offeredToken;
-    ERC20Mock public requestedToken;
-
-    address public owner;
-    address public maker;
-    address public taker1;
-    address public taker2;
-
-    uint256 public constant INITIAL_MAKER_BALANCE = 100 ether;
-
-    uint256 public constant OFFER_AMOUNT = 10 ether;
-    uint256 public constant MIN_FILL_AMOUNT = 1 ether;
-    uint256 public constant MAX_SLIPPAGE_BPS = 100;
-    uint256 public validFrom = uint64(block.timestamp);
-    uint256 public validUntil = uint64(block.timestamp + 1 days);
-
-    function setUp() public {
-        owner = makeAddr("owner");
-        maker = makeAddr("maker");
-        taker1 = makeAddr("taker1");
-        taker2 = makeAddr("taker2");
-
-        offeredToken = new ERC20Mock();
-        requestedToken = new ERC20Mock();
-
-        offeredToken.mint(maker, INITIAL_MAKER_BALANCE);
-
-        vm.startPrank(owner);
-        settlementEngine = new SettlementEngine();
-        escrow = new Escrow();
-        orderbook = new Orderbook(address(settlementEngine), address(escrow));
-        vm.stopPrank();
-    }
-
+contract CreateTokenOfferTest is TestSetup {
     /*//////////////////////////////////////////////////////////////
                             STATE UPDATES
     //////////////////////////////////////////////////////////////*/
@@ -58,23 +16,50 @@ contract CreateTokenOfferTest is Test {
         assertEq(initialMakerBalance, INITIAL_MAKER_BALANCE);
         assertEq(initialEscrowBalance, 0);
 
-        (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), OFFER_AMOUNT, MIN_FILL_AMOUNT, MAX_SLIPPAGE_BPS, validFrom, validUntil
-        );
+        (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
 
         bytes32 expectedOrderId = keccak256(
-            abi.encode(maker, orderbook.nonce(), address(offeredToken), OFFER_AMOUNT, address(requestedToken))
+            abi.encode(
+                maker,
+                orderbook.nonce(),
+                address(offeredToken),
+                OFFER_AMOUNT,
+                address(requestedToken)
+            )
         );
 
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.TokenOfferCreated(expectedOrderId, maker, offer, address(requestedToken), constraints);
-        bytes32 orderId = orderbook.createTokenOffer(offer, address(requestedToken), constraints);
+        emit Orderbook.TokenOfferCreated(
+            expectedOrderId,
+            maker,
+            offer,
+            address(requestedToken),
+            constraints
+        );
+        bytes32 orderId = orderbook.createTokenOffer(
+            offer,
+            address(requestedToken),
+            constraints
+        );
         vm.stopPrank();
 
-        assertEq(offeredToken.balanceOf(maker), INITIAL_MAKER_BALANCE - OFFER_AMOUNT);
+        assertEq(
+            offeredToken.balanceOf(maker),
+            INITIAL_MAKER_BALANCE - OFFER_AMOUNT
+        );
         assertEq(offeredToken.balanceOf(address(escrow)), OFFER_AMOUNT);
 
         (
@@ -109,9 +94,17 @@ contract CreateTokenOfferTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function test_CreateTokenOffer_Reverts_ZeroAddress() public {
-        (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), OFFER_AMOUNT, MIN_FILL_AMOUNT, MAX_SLIPPAGE_BPS, validFrom, validUntil
-        );
+        (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
 
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
@@ -120,7 +113,12 @@ contract CreateTokenOfferTest is Test {
         orderbook.createTokenOffer(offer, address(0), constraints);
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
-            address(0), OFFER_AMOUNT, MIN_FILL_AMOUNT, MAX_SLIPPAGE_BPS, validFrom, validUntil
+            address(0),
+            OFFER_AMOUNT,
+            MIN_FILL_AMOUNT,
+            MAX_SLIPPAGE_BPS,
+            validFrom,
+            validUntil
         );
 
         vm.expectRevert(Orderbook.Orderbook__ZeroAddress.selector);
@@ -128,9 +126,17 @@ contract CreateTokenOfferTest is Test {
     }
 
     function test_CreateTokenOffer_Reverts_InvalidAmounts() public {
-        (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), 0, MIN_FILL_AMOUNT, MAX_SLIPPAGE_BPS, validFrom, validUntil
-        );
+        (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                0,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
 
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
@@ -141,9 +147,17 @@ contract CreateTokenOfferTest is Test {
     }
 
     function test_CreateTokenOffer_Reverts_InvalidConstraints() public {
-        (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), OFFER_AMOUNT, 0, MAX_SLIPPAGE_BPS, validFrom, validUntil
-        );
+        (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                0,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
 
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
@@ -153,7 +167,12 @@ contract CreateTokenOfferTest is Test {
         vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), OFFER_AMOUNT, MIN_FILL_AMOUNT, 0, validFrom, validUntil
+            address(offeredToken),
+            OFFER_AMOUNT,
+            MIN_FILL_AMOUNT,
+            0,
+            validFrom,
+            validUntil
         );
 
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
@@ -161,7 +180,12 @@ contract CreateTokenOfferTest is Test {
         vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), OFFER_AMOUNT, MIN_FILL_AMOUNT, MAX_SLIPPAGE_BPS, block.timestamp - 1, validUntil
+            address(offeredToken),
+            OFFER_AMOUNT,
+            MIN_FILL_AMOUNT,
+            MAX_SLIPPAGE_BPS,
+            block.timestamp - 1,
+            validUntil
         );
 
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
@@ -169,7 +193,12 @@ contract CreateTokenOfferTest is Test {
         vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken), OFFER_AMOUNT, MIN_FILL_AMOUNT, MAX_SLIPPAGE_BPS, validFrom, block.timestamp
+            address(offeredToken),
+            OFFER_AMOUNT,
+            MIN_FILL_AMOUNT,
+            MAX_SLIPPAGE_BPS,
+            validFrom,
+            block.timestamp
         );
 
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
@@ -188,7 +217,14 @@ contract CreateTokenOfferTest is Test {
         uint256 _maxSlippageBps,
         uint256 _validFrom,
         uint256 _validUntil
-    ) internal pure returns (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) {
+    )
+        internal
+        pure
+        returns (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        )
+    {
         offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = Orderbook.Constraints({
