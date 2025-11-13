@@ -46,4 +46,35 @@ contract TestSetup is Test {
         orderbook = new Orderbook(address(settlementEngine), address(escrow));
         vm.stopPrank();
     }
+
+    /*//////////////////////////////////////////////////////////////
+                            HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    function _generateOfferAmountsAndConstraints(
+        address _offeredToken,
+        uint256 _amount,
+        uint256 _minFillAmount,
+        uint256 _maxSlippageBps,
+        uint256 _validFrom,
+        uint256 _validUntil
+    )
+        internal
+        pure
+        returns (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        )
+    {
+        offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
+
+        constraints = Orderbook.Constraints({
+            minFillAmount: _minFillAmount,
+            maxSlippageBps: _maxSlippageBps,
+            validFrom: uint64(_validFrom),
+            validUntil: uint64(_validUntil)
+        });
+
+        return (offer, constraints);
+    }
 }

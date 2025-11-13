@@ -42,7 +42,7 @@ contract CreateTokenOfferTest is TestSetup {
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.TokenOfferCreated(
+        emit Orderbook.OfferCreated(
             expectedOrderId,
             maker,
             offer,
@@ -204,36 +204,5 @@ contract CreateTokenOfferTest is TestSetup {
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                            HELPERS
-    //////////////////////////////////////////////////////////////*/
-
-    function _generateOfferAmountsAndConstraints(
-        address _offeredToken,
-        uint256 _amount,
-        uint256 _minFillAmount,
-        uint256 _maxSlippageBps,
-        uint256 _validFrom,
-        uint256 _validUntil
-    )
-        internal
-        pure
-        returns (
-            Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
-        )
-    {
-        offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
-
-        constraints = Orderbook.Constraints({
-            minFillAmount: _minFillAmount,
-            maxSlippageBps: _maxSlippageBps,
-            validFrom: uint64(_validFrom),
-            validUntil: uint64(_validUntil)
-        });
-
-        return (offer, constraints);
     }
 }
