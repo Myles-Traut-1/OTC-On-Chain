@@ -58,14 +58,7 @@ contract TestSetup is Test {
         uint256 _maxSlippageBps,
         uint256 _validFrom,
         uint256 _validUntil
-    )
-        internal
-        pure
-        returns (
-            Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
-        )
-    {
+    ) internal pure returns (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) {
         offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = Orderbook.Constraints({
