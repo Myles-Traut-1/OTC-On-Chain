@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    SafeERC20,
+    IERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @notice Orderbook data model shared across the OTC desk suite.
 /// @dev Execution logic lives in dedicated settlement/escrow contracts;
@@ -20,10 +25,15 @@ contract Orderbook is ReentrancyGuard {
     error Orderbook__InsufficientBalance();
     error Orderbook__InvalidTokenAmount();
     error Orderbook__InvalidConstraints();
+    error Orderbook__NotETH();
+    error Orderbook__ETHTransferFailed();
 
     /*//////////////////////////////////////////////////////////////
                             STORAGE
     //////////////////////////////////////////////////////////////*/
+
+    address public constant ETH_ADDRESS =
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @notice Lifecycle states tracked on-chain to prevent replays.
     enum OrderStatus {
@@ -101,10 +111,10 @@ contract Orderbook is ReentrancyGuard {
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address _settlementEngine, address _escrow)
-        checkZeroAddress(_settlementEngine)
-        checkZeroAddress(_escrow)
-    {
+    constructor(
+        address _settlementEngine,
+        address _escrow
+    ) checkZeroAddress(_settlementEngine) checkZeroAddress(_escrow) {
         settlementEngine = _settlementEngine;
         escrow = _escrow;
         nonce = 1;
@@ -117,18 +127,30 @@ contract Orderbook is ReentrancyGuard {
                         EXTERNAL FUINCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function createTokenOffer(TokenAmount memory _offer, address _requestedToken, Constraints memory _constraints)
+    function createTokenOffer(
+        TokenAmount memory _offer,
+        address _requestedToken,
+        Constraints memory _constraints
+    )
         external
         checkZeroAddress(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
         returns (bytes32 _orderId)
     {
-        _orderId = keccak256(abi.encode(msg.sender, nonce, _offer.token, _offer.amount, _requestedToken));
+        _orderId = _generateOrderId(
+            _offer.token,
+            _offer.amount,
+            _requestedToken
+        );
 
         _validateConstraints(_constraints);
 
-        IERC20(_offer.token).safeTransferFrom(msg.sender, escrow, _offer.amount);
+        IERC20(_offer.token).safeTransferFrom(
+            msg.sender,
+            escrow,
+            _offer.amount
+        );
 
         orders[_orderId] = Order({
             orderId: _orderId,
@@ -142,7 +164,64 @@ contract Orderbook is ReentrancyGuard {
         orderStatusById[_orderId] = OrderStatus.Open;
         nonce++;
 
-        emit TokenOfferCreated(_orderId, msg.sender, _offer, _requestedToken, _constraints);
+        emit TokenOfferCreated(
+            _orderId,
+            msg.sender,
+            _offer,
+            _requestedToken,
+            _constraints
+        );
+    }
+
+    function createEthOffer(
+        TokenAmount memory _offer,
+        address _requestedToken,
+        Constraints memory _constraints
+    )
+        external
+        payable
+        checkZeroAddress(_requestedToken)
+        validateTokenAmounts(_offer)
+        nonReentrant
+        returns (bytes32 _orderId)
+    {
+        if (msg.value != _offer.amount) {
+            revert Orderbook__InvalidTokenAmount();
+        }
+
+        if (_offer.token != ETH_ADDRESS) {
+            revert Orderbook__NotETH();
+        }
+
+        _orderId = _generateOrderId(ETH_ADDRESS, msg.value, _requestedToken);
+
+        _validateConstraints(_constraints);
+
+        // Transfer ETH to escrow
+        (bool success, ) = escrow.call{value: msg.value}("");
+        if (!success) {
+            revert Orderbook__ETHTransferFailed();
+        }
+
+        orders[_orderId] = Order({
+            orderId: _orderId,
+            maker: msg.sender,
+            offer: TokenAmount({token: ETH_ADDRESS, amount: msg.value}),
+            requestedToken: _requestedToken,
+            constraints: _constraints,
+            remainingAmount: msg.value
+        });
+
+        orderStatusById[_orderId] = OrderStatus.Open;
+        nonce++;
+
+        emit TokenOfferCreated(
+            _orderId,
+            msg.sender,
+            _offer,
+            _requestedToken,
+            _constraints
+        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -164,12 +243,33 @@ contract Orderbook is ReentrancyGuard {
         }
     }
 
-    function _validateConstraints(Constraints memory _constraints) internal view {
+    function _validateConstraints(
+        Constraints memory _constraints
+    ) internal view {
         if (
-            _constraints.minFillAmount == 0 || _constraints.maxSlippageBps == 0
-                || _constraints.validFrom < block.timestamp || _constraints.validUntil <= _constraints.validFrom
+            _constraints.minFillAmount == 0 ||
+            _constraints.maxSlippageBps == 0 ||
+            _constraints.validFrom < block.timestamp ||
+            _constraints.validUntil <= _constraints.validFrom
         ) {
             revert Orderbook__InvalidConstraints();
         }
+    }
+
+    function _generateOrderId(
+        address _offeredToken,
+        uint256 _amount,
+        address _requestedToken
+    ) internal returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    msg.sender,
+                    nonce,
+                    _offeredToken,
+                    _amount,
+                    _requestedToken
+                )
+            );
     }
 }
