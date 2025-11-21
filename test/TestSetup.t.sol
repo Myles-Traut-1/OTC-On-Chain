@@ -29,7 +29,7 @@ contract TestSetup is Test {
     uint256 public validFrom = uint64(block.timestamp);
     uint256 public validUntil = uint64(block.timestamp + 1 days);
 
-    function setUp() public {
+    function setUp() public virtual {
         owner = makeAddr("owner");
         maker = makeAddr("maker");
         taker1 = makeAddr("taker1");
@@ -58,7 +58,14 @@ contract TestSetup is Test {
         uint256 _maxSlippageBps,
         uint256 _validFrom,
         uint256 _validUntil
-    ) internal pure returns (Orderbook.TokenAmount memory offer, Orderbook.Constraints memory constraints) {
+    )
+        internal
+        pure
+        returns (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        )
+    {
         offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = Orderbook.Constraints({
