@@ -31,6 +31,7 @@ contract Orderbook is ReentrancyGuard {
     error Orderbook__ETHTransferFailed();
     error Orderbook__NotOfferCreator();
     error Orderbook__OrderNotOpen();
+    error Orderbook__InvalidOrderId();
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
@@ -306,5 +307,19 @@ contract Orderbook is ReentrancyGuard {
                     _requestedToken
                 )
             );
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function getOrder(
+        bytes32 _orderId
+    ) external view returns (Order memory order, OrderStatus status) {
+        if (orders[_orderId].maker == address(0)) {
+            revert Orderbook__InvalidOrderId();
+        }
+        order = orders[_orderId];
+        status = orderStatusById[_orderId];
     }
 }
