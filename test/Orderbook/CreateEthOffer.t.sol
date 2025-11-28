@@ -92,6 +92,72 @@ contract CreateEthOfferTest is TestSetup {
         vm.stopPrank();
     }
 
+    function test_CreateEthOffer_Reverts_NotETH() public {
+        (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+
+        vm.expectRevert(Orderbook.Orderbook__NotETH.selector);
+        orderbook.createEthOffer{value: OFFER_AMOUNT}(
+            offer,
+            address(requestedToken),
+            constraints
+        );
+
+        vm.stopPrank();
+    }
+
+    function testCreateEthOffer_TransferFails() public {
+        // Arrange
+        (
+            Orderbook.TokenAmount memory offer,
+            Orderbook.Constraints memory constraints
+        ) = _generateOfferAmountsAndConstraints(
+                orderbook.ETH_ADDRESS(),
+                OFFER_AMOUNT,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(owner);
+
+        // Mock escrow to fail
+        address mockEscrow = address(new MockEscrow());
+        Orderbook newOrderbook = new Orderbook(
+            address(settlementEngine),
+            mockEscrow
+        );
+        vm.stopPrank();
+
+        // Assert escrow address
+        assertEq(
+            address(newOrderbook.escrow()),
+            mockEscrow,
+            "Escrow address mismatch"
+        );
+
+        // Act & Assert
+        vm.startPrank(maker); // Simulate maker's call
+        vm.expectRevert(Orderbook.Orderbook__ETHTransferFailed.selector);
+        newOrderbook.createEthOffer{value: offer.amount}(
+            offer,
+            address(requestedToken),
+            constraints
+        );
+    }
+
     function test_CreateEthOffer_Reverts_InvalidAmounts() public {
         (
             Orderbook.TokenAmount memory offer,
@@ -190,5 +256,11 @@ contract CreateEthOfferTest is TestSetup {
             constraints
         );
         vm.stopPrank();
+    }
+}
+
+contract MockEscrow {
+    receive() external payable {
+        revert("MockEscrow: ETH transfer failed");
     }
 }

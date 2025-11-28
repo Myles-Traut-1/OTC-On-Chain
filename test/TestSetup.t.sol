@@ -44,6 +44,8 @@ contract TestSetup is Test {
         settlementEngine = new SettlementEngine();
         escrow = new Escrow();
         orderbook = new Orderbook(address(settlementEngine), address(escrow));
+
+        escrow.setOrderbook(address(orderbook));
         vm.stopPrank();
     }
 

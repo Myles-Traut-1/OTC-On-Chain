@@ -9,6 +9,8 @@ import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import {Escrow} from "./Escrow.sol";
+
 /// @notice Orderbook data model shared across the OTC desk suite.
 /// @dev Execution logic lives in dedicated settlement/escrow contracts;
 ///      this contract focuses on the canonical order schema, identifiers and status tracking so that other modules can integrate without duplicating definitions.
@@ -27,6 +29,37 @@ contract Orderbook is ReentrancyGuard {
     error Orderbook__InvalidConstraints();
     error Orderbook__NotETH();
     error Orderbook__ETHTransferFailed();
+    error Orderbook__NotOfferCreator();
+    error Orderbook__OrderNotOpen();
+
+    /*//////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    event SettlementEngineSet(address indexed settlementEngine);
+    event EscrowSet(address indexed escrow);
+    event OfferCreated(
+        bytes32 indexed orderId,
+        address indexed maker,
+        TokenAmount offer,
+        address requestedToken,
+        Constraints constraints
+    );
+    event OfferCancelled(bytes32 indexed orderId, address indexed maker);
+
+    /*//////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier checkZeroAddress(address _address) {
+        _checkZeroAddress(_address);
+        _;
+    }
+
+    modifier validateTokenAmounts(TokenAmount memory _offer) {
+        _validateTokenAmounts(_offer);
+        _;
+    }
 
     /*//////////////////////////////////////////////////////////////
                             STORAGE
@@ -76,36 +109,7 @@ contract Orderbook is ReentrancyGuard {
     uint256 public nonce;
 
     address public settlementEngine;
-    address public escrow;
-
-    /*//////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
-
-    event SettlementEngineSet(address indexed settlementEngine);
-    event EscrowSet(address indexed escrow);
-
-    event OfferCreated(
-        bytes32 indexed orderId,
-        address indexed maker,
-        TokenAmount offer,
-        address requestedToken,
-        Constraints constraints
-    );
-
-    /*//////////////////////////////////////////////////////////////
-                            MODIFIERS
-    //////////////////////////////////////////////////////////////*/
-
-    modifier checkZeroAddress(address _address) {
-        _checkZeroAddress(_address);
-        _;
-    }
-
-    modifier validateTokenAmounts(TokenAmount memory _offer) {
-        _validateTokenAmounts(_offer);
-        _;
-    }
+    Escrow public escrow;
 
     /*//////////////////////////////////////////////////////////////
                             CONSTRUCTOR
@@ -116,15 +120,15 @@ contract Orderbook is ReentrancyGuard {
         address _escrow
     ) checkZeroAddress(_settlementEngine) checkZeroAddress(_escrow) {
         settlementEngine = _settlementEngine;
-        escrow = _escrow;
+        escrow = Escrow(payable(_escrow));
         nonce = 1;
 
         emit SettlementEngineSet(settlementEngine);
-        emit EscrowSet(escrow);
+        emit EscrowSet(address(escrow));
     }
 
     /*//////////////////////////////////////////////////////////////
-                        EXTERNAL FUINCTIONS
+                        EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     function createTokenOffer(
@@ -148,7 +152,7 @@ contract Orderbook is ReentrancyGuard {
 
         IERC20(_offer.token).safeTransferFrom(
             msg.sender,
-            escrow,
+            address(escrow),
             _offer.amount
         );
 
@@ -198,7 +202,8 @@ contract Orderbook is ReentrancyGuard {
         _validateConstraints(_constraints);
 
         // Transfer ETH to escrow
-        (bool success, ) = escrow.call{value: msg.value}("");
+        (bool success, ) = address(escrow).call{value: msg.value}("");
+
         if (!success) {
             revert Orderbook__ETHTransferFailed();
         }
@@ -222,6 +227,36 @@ contract Orderbook is ReentrancyGuard {
             _requestedToken,
             _constraints
         );
+    }
+
+    function cancelOffer(bytes32 _offerId) external nonReentrant {
+        Order storage order = orders[_offerId];
+
+        if (order.maker != msg.sender) {
+            revert Orderbook__NotOfferCreator();
+        }
+
+        if (orderStatusById[_offerId] != OrderStatus.Open) {
+            revert Orderbook__OrderNotOpen();
+        }
+
+        orderStatusById[_offerId] = OrderStatus.Cancelled;
+
+        uint256 remainingAmount = order.remainingAmount;
+        order.remainingAmount = 0;
+
+        // Return remaining offer amount to maker
+        if (order.offer.token == ETH_ADDRESS) {
+            escrow.transferFunds(ETH_ADDRESS, order.maker, remainingAmount);
+        } else {
+            escrow.transferFunds(
+                order.offer.token,
+                order.maker,
+                remainingAmount
+            );
+        }
+
+        emit OfferCancelled(_offerId, msg.sender);
     }
 
     /*//////////////////////////////////////////////////////////////
