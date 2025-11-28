@@ -47,6 +47,8 @@ contract TestSetup is Test {
 
         escrow.setOrderbook(address(orderbook));
         vm.stopPrank();
+
+        deal(maker, INITIAL_MAKER_BALANCE);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -78,5 +80,49 @@ contract TestSetup is Test {
         });
 
         return (offer, constraints);
+    }
+
+    function _createAndReturnOffer(
+        address _offeredToken
+    ) internal returns (bytes32 orderId) {
+        Orderbook.TokenAmount memory offer;
+        Orderbook.Constraints memory constraints;
+
+        if (_offeredToken == orderbook.ETH_ADDRESS()) {
+            (offer, constraints) = _generateOfferAmountsAndConstraints(
+                orderbook.ETH_ADDRESS(),
+                OFFER_AMOUNT,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+            vm.startPrank(maker);
+            orderId = orderbook.createEthOffer{value: OFFER_AMOUNT}(
+                offer,
+                address(requestedToken),
+                constraints
+            );
+            vm.stopPrank();
+        } else {
+            (offer, constraints) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MIN_FILL_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+            vm.startPrank(maker);
+            offeredToken.approve(address(orderbook), OFFER_AMOUNT);
+            orderId = orderbook.createTokenOffer(
+                offer,
+                address(requestedToken),
+                constraints
+            );
+            vm.stopPrank();
+        }
     }
 }

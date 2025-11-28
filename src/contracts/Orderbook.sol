@@ -313,13 +313,13 @@ contract Orderbook is ReentrancyGuard {
                              VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function getOrder(
-        bytes32 _orderId
+    function getOffer(
+        bytes32 _offerId
     ) external view returns (Order memory order, OrderStatus status) {
-        if (orders[_orderId].maker == address(0)) {
+        if (orders[_offerId].maker == address(0)) {
             revert Orderbook__InvalidOrderId();
         }
-        order = orders[_orderId];
-        status = orderStatusById[_orderId];
+        order = orders[_offerId];
+        status = orderStatusById[_offerId];
     }
 }
