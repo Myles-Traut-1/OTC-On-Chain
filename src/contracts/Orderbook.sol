@@ -22,7 +22,7 @@ contract Orderbook is ReentrancyGuard {
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    error Orderbook__OrderAlreadyExists(bytes32 orderId);
+    error Orderbook__OfferAlreadyExists(bytes32 orderId);
     error Orderbook__ZeroAddress();
     error Orderbook__InsufficientBalance();
     error Orderbook__InvalidTokenAmount();
@@ -30,8 +30,8 @@ contract Orderbook is ReentrancyGuard {
     error Orderbook__NotETH();
     error Orderbook__ETHTransferFailed();
     error Orderbook__NotOfferCreator();
-    error Orderbook__OrderNotOpen();
-    error Orderbook__InvalidOrderId();
+    error Orderbook__OfferNotOpen();
+    error Orderbook__InvalidOfferId();
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
@@ -47,6 +47,13 @@ contract Orderbook is ReentrancyGuard {
         Constraints constraints
     );
     event OfferCancelled(bytes32 indexed orderId, address indexed maker);
+    event OfferUpdated(
+        bytes32 indexed orderId,
+        address indexed maker,
+        TokenAmount newAmounts,
+        address requestedToken,
+        Constraints newConstraints
+    );
 
     /*//////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -70,9 +77,10 @@ contract Orderbook is ReentrancyGuard {
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /// @notice Lifecycle states tracked on-chain to prevent replays.
-    enum OrderStatus {
+    enum OfferStatus {
         None,
         Open,
+        InProgress,
         Filled,
         Cancelled,
         Expired
@@ -93,8 +101,7 @@ contract Orderbook is ReentrancyGuard {
     }
 
     /// @notice Canonical order payload hashed for EIP-712 signatures.
-    struct Order {
-        bytes32 orderId; // Unique identifier
+    struct Offer {
         address maker; // Maker configuration
         TokenAmount offer; // Asset/amount maker is giving
         address requestedToken; // Asset maker expects
@@ -102,10 +109,10 @@ contract Orderbook is ReentrancyGuard {
         uint256 remainingAmount; // Fill and timing controls
     }
 
-    /// @notice Tracks the current status of an order hash to prevent replays.
-    mapping(bytes32 orderId => OrderStatus status) public orderStatusById;
+    /// @notice Tracks the current status of an offer hash to prevent replays.
+    mapping(bytes32 offerId => OfferStatus status) public offerStatusById;
 
-    mapping(bytes32 orderId => Order order) public orders;
+    mapping(bytes32 offerId => Offer offer) public offers;
 
     uint256 public nonce;
 
@@ -141,9 +148,9 @@ contract Orderbook is ReentrancyGuard {
         checkZeroAddress(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
-        returns (bytes32 _orderId)
+        returns (bytes32 _offerId)
     {
-        _orderId = _generateOrderId(
+        _offerId = _generateOrderId(
             _offer.token,
             _offer.amount,
             _requestedToken
@@ -157,8 +164,7 @@ contract Orderbook is ReentrancyGuard {
             _offer.amount
         );
 
-        orders[_orderId] = Order({
-            orderId: _orderId,
+        offers[_offerId] = Offer({
             maker: msg.sender,
             offer: _offer,
             requestedToken: _requestedToken,
@@ -166,11 +172,11 @@ contract Orderbook is ReentrancyGuard {
             remainingAmount: _offer.amount
         });
 
-        orderStatusById[_orderId] = OrderStatus.Open;
+        offerStatusById[_offerId] = OfferStatus.Open;
         nonce++;
 
         emit OfferCreated(
-            _orderId,
+            _offerId,
             msg.sender,
             _offer,
             _requestedToken,
@@ -188,7 +194,7 @@ contract Orderbook is ReentrancyGuard {
         checkZeroAddress(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
-        returns (bytes32 _orderId)
+        returns (bytes32 _offerId)
     {
         if (msg.value != _offer.amount) {
             revert Orderbook__InvalidTokenAmount();
@@ -198,7 +204,7 @@ contract Orderbook is ReentrancyGuard {
             revert Orderbook__NotETH();
         }
 
-        _orderId = _generateOrderId(ETH_ADDRESS, msg.value, _requestedToken);
+        _offerId = _generateOrderId(ETH_ADDRESS, msg.value, _requestedToken);
 
         _validateConstraints(_constraints);
 
@@ -209,20 +215,19 @@ contract Orderbook is ReentrancyGuard {
             revert Orderbook__ETHTransferFailed();
         }
 
-        orders[_orderId] = Order({
-            orderId: _orderId,
+        offers[_offerId] = Offer({
             maker: msg.sender,
-            offer: TokenAmount({token: ETH_ADDRESS, amount: msg.value}),
+            offer: _offer,
             requestedToken: _requestedToken,
             constraints: _constraints,
             remainingAmount: msg.value
         });
 
-        orderStatusById[_orderId] = OrderStatus.Open;
+        offerStatusById[_offerId] = OfferStatus.Open;
         nonce++;
 
         emit OfferCreated(
-            _orderId,
+            _offerId,
             msg.sender,
             _offer,
             _requestedToken,
@@ -231,33 +236,73 @@ contract Orderbook is ReentrancyGuard {
     }
 
     function cancelOffer(bytes32 _offerId) external nonReentrant {
-        Order storage order = orders[_offerId];
+        Offer storage offer = offers[_offerId];
 
-        if (order.maker != msg.sender) {
+        if (offer.maker != msg.sender) {
             revert Orderbook__NotOfferCreator();
         }
 
-        if (orderStatusById[_offerId] != OrderStatus.Open) {
-            revert Orderbook__OrderNotOpen();
+        if (offerStatusById[_offerId] != OfferStatus.Open) {
+            revert Orderbook__OfferNotOpen();
         }
 
-        orderStatusById[_offerId] = OrderStatus.Cancelled;
+        offerStatusById[_offerId] = OfferStatus.Cancelled;
 
-        uint256 remainingAmount = order.remainingAmount;
-        order.remainingAmount = 0;
+        uint256 remainingAmount = offer.remainingAmount;
+        offer.remainingAmount = 0;
 
         // Return remaining offer amount to maker
-        if (order.offer.token == ETH_ADDRESS) {
-            escrow.transferFunds(ETH_ADDRESS, order.maker, remainingAmount);
+        if (offer.offer.token == ETH_ADDRESS) {
+            escrow.transferFunds(ETH_ADDRESS, offer.maker, remainingAmount);
         } else {
             escrow.transferFunds(
-                order.offer.token,
-                order.maker,
+                offer.offer.token,
+                offer.maker,
                 remainingAmount
             );
         }
 
         emit OfferCancelled(_offerId, msg.sender);
+    }
+
+    function updateOffer(
+        bytes32 _offerId,
+        TokenAmount calldata _newAmounts,
+        Constraints calldata _newConstraints,
+        address _requestedToken
+    ) external checkZeroAddress(_requestedToken) {
+        (Offer memory offer, OfferStatus status) = _getOffer(_offerId);
+        if (offer.maker != msg.sender) {
+            revert Orderbook__NotOfferCreator();
+        }
+        if (status != OfferStatus.Open) {
+            revert Orderbook__OfferNotOpen();
+        }
+        _validateTokenAmounts(_newAmounts);
+        _validateConstraints(_newConstraints);
+
+        offer.offer.token = _newAmounts.token;
+        offer.offer.amount = _newAmounts.amount;
+        offer.constraints = _newConstraints;
+
+        if (_requestedToken != offer.requestedToken) {
+            offer.requestedToken = _requestedToken;
+        }
+
+        offers[_offerId] = offer;
+
+        emit OfferUpdated(
+            _offerId,
+            msg.sender,
+            _newAmounts,
+            _requestedToken,
+            _newConstraints
+        );
+    }
+
+    function contribute(bytes32 _offerId) public {
+        // Just here to update the OrderStatus
+        offerStatusById[_offerId] = OfferStatus.InProgress;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -309,17 +354,23 @@ contract Orderbook is ReentrancyGuard {
             );
     }
 
+    function _getOffer(
+        bytes32 _offerId
+    ) internal view returns (Offer memory offer, OfferStatus status) {
+        if (offers[_offerId].maker == address(0)) {
+            revert Orderbook__InvalidOfferId();
+        }
+        offer = offers[_offerId];
+        status = offerStatusById[_offerId];
+    }
+
     /*//////////////////////////////////////////////////////////////
                              VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     function getOffer(
         bytes32 _offerId
-    ) external view returns (Order memory order, OrderStatus status) {
-        if (orders[_offerId].maker == address(0)) {
-            revert Orderbook__InvalidOrderId();
-        }
-        order = orders[_offerId];
-        status = orderStatusById[_offerId];
+    ) external view returns (Offer memory offer, OfferStatus status) {
+        return _getOffer(_offerId);
     }
 }

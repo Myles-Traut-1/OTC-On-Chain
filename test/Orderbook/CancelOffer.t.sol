@@ -26,7 +26,7 @@ contract CancelOfferTest is TestSetup {
         assertEq(escrowBalanceBefore, OFFER_AMOUNT);
         assertEq(makerBalanceBefore, INITIAL_MAKER_BALANCE - OFFER_AMOUNT);
 
-        (, , , , , uint256 remainingAmount) = orderbook.orders(offerId);
+        (, , , , uint256 remainingAmount) = orderbook.offers(offerId);
         assertEq(remainingAmount, OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
@@ -40,10 +40,10 @@ contract CancelOfferTest is TestSetup {
         assertEq(escrowBalanceAfter, 0);
         assertEq(makerBalanceAfter, INITIAL_MAKER_BALANCE);
 
-        Orderbook.OrderStatus orderStatus = orderbook.orderStatusById(offerId);
-        assert(orderStatus == Orderbook.OrderStatus.Cancelled);
+        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+        assert(offerStatus == Orderbook.OfferStatus.Cancelled);
 
-        (, , , , , remainingAmount) = orderbook.orders(offerId);
+        (, , , , remainingAmount) = orderbook.offers(offerId);
         assertEq(remainingAmount, 0);
     }
 
@@ -57,7 +57,7 @@ contract CancelOfferTest is TestSetup {
         assertEq(escrowBalanceBefore, OFFER_AMOUNT);
         assertEq(makerBalanceBefore, INITIAL_MAKER_BALANCE - OFFER_AMOUNT);
 
-        (, , , , , uint256 remainingAmount) = orderbook.orders(offerId);
+        (, , , , uint256 remainingAmount) = orderbook.offers(offerId);
         assertEq(remainingAmount, OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
@@ -71,10 +71,10 @@ contract CancelOfferTest is TestSetup {
         assertEq(escrowBalanceAfter, 0);
         assertEq(makerBalanceAfter, INITIAL_MAKER_BALANCE);
 
-        Orderbook.OrderStatus orderStatus = orderbook.orderStatusById(offerId);
-        assert(orderStatus == Orderbook.OrderStatus.Cancelled);
+        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+        assert(offerStatus == Orderbook.OfferStatus.Cancelled);
 
-        (, , , , , remainingAmount) = orderbook.orders(offerId);
+        (, , , , remainingAmount) = orderbook.offers(offerId);
         assertEq(remainingAmount, 0);
     }
 
@@ -105,7 +105,7 @@ contract CancelOfferTest is TestSetup {
         vm.stopPrank();
 
         vm.startPrank(maker);
-        vm.expectRevert(Orderbook.Orderbook__OrderNotOpen.selector);
+        vm.expectRevert(Orderbook.Orderbook__OfferNotOpen.selector);
         orderbook.cancelOffer(offerId);
         vm.stopPrank();
     }

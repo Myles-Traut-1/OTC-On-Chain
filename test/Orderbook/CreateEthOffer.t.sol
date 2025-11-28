@@ -5,11 +5,6 @@ import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
 
 contract CreateEthOfferTest is TestSetup {
-    function setUp() public override {
-        super.setUp();
-
-        deal(maker, OFFER_AMOUNT);
-    }
     /*//////////////////////////////////////////////////////////////
                             STATE UPDATES
     //////////////////////////////////////////////////////////////*/
@@ -18,7 +13,7 @@ contract CreateEthOfferTest is TestSetup {
         uint256 initialMakerBalance = maker.balance;
         uint256 initialEscrowBalance = address(escrow).balance;
 
-        assertEq(initialMakerBalance, OFFER_AMOUNT);
+        assertEq(initialMakerBalance, INITIAL_MAKER_BALANCE);
         assertEq(initialEscrowBalance, 0);
 
         (
