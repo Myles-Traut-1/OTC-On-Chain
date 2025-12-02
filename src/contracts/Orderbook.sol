@@ -318,30 +318,6 @@ contract Orderbook is ReentrancyGuard {
         }
     }
 
-    function _encodeConstraints(
-        uint64 _validFrom,
-        uint64 _validUntil,
-        uint128 _maxSlippageBps
-    ) private view returns (uint256 encodedConstraints) {
-        // Shift '_validUntil' to the left by 64 bits, '_maxSlippageBps' to the left by 128 bits, and combine with '_validFrom' using bitwise OR
-        encodedConstraints =
-            (uint256(_maxSlippageBps) << 128) |
-            (uint256(_validUntil) << 64) |
-            uint256(_validFrom);
-    }
-
-    function _decodeConstraints(
-        uint256 _encodedConstraints
-    )
-        private
-        view
-        returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
-    {
-        validFrom = uint64(_encodedConstraints & 0xFFFFFFFFFFFFFFFF); // Mask for the lower 64 bits
-        validUntil = uint64(_encodedConstraints >> 64);
-        maxSlippageBps = uint128(_encodedConstraints >> 128);
-    }
-
     function _generateOrderId(
         address _offeredToken,
         uint256 _amount,
@@ -415,5 +391,33 @@ contract Orderbook is ReentrancyGuard {
         returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
     {
         return _decodeConstraints(_encodedConstraints);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           PRIVATE FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _encodeConstraints(
+        uint64 _validFrom,
+        uint64 _validUntil,
+        uint128 _maxSlippageBps
+    ) private view returns (uint256 encodedConstraints) {
+        // Shift '_validUntil' to the left by 64 bits, '_maxSlippageBps' to the left by 128 bits, and combine with '_validFrom' using bitwise OR
+        encodedConstraints =
+            (uint256(_maxSlippageBps) << 128) |
+            (uint256(_validUntil) << 64) |
+            uint256(_validFrom);
+    }
+
+    function _decodeConstraints(
+        uint256 _encodedConstraints
+    )
+        private
+        view
+        returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
+    {
+        validFrom = uint64(_encodedConstraints & 0xFFFFFFFFFFFFFFFF); // Mask for the lower 64 bits
+        validUntil = uint64(_encodedConstraints >> 64);
+        maxSlippageBps = uint128(_encodedConstraints >> 128);
     }
 }
