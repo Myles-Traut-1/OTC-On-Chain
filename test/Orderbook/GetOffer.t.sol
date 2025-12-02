@@ -15,7 +15,6 @@ contract Orderbook_GetOffer is TestSetup {
         assertEq(offer.offer.token, address(offeredToken));
         assertEq(offer.offer.amount, OFFER_AMOUNT);
         assertEq(offer.requestedToken, address(requestedToken));
-        assertEq(offer.constraints.minFillAmount, MIN_FILL_AMOUNT);
         assertEq(offer.constraints.maxSlippageBps, MAX_SLIPPAGE_BPS);
         assertEq(offer.constraints.validFrom, uint64(validFrom));
         assertEq(offer.constraints.validUntil, uint64(validUntil));
@@ -31,7 +30,6 @@ contract Orderbook_GetOffer is TestSetup {
         assertEq(offer.offer.token, address(orderbook.ETH_ADDRESS()));
         assertEq(offer.offer.amount, OFFER_AMOUNT);
         assertEq(offer.requestedToken, address(requestedToken));
-        assertEq(offer.constraints.minFillAmount, MIN_FILL_AMOUNT);
         assertEq(offer.constraints.maxSlippageBps, MAX_SLIPPAGE_BPS);
         assertEq(offer.constraints.validFrom, uint64(validFrom));
         assertEq(offer.constraints.validUntil, uint64(validUntil));

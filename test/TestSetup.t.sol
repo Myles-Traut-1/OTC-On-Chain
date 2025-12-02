@@ -58,7 +58,6 @@ contract TestSetup is Test {
     function _generateOfferAmountsAndConstraints(
         address _offeredToken,
         uint256 _amount,
-        uint256 _minFillAmount,
         uint256 _maxSlippageBps,
         uint256 _validFrom,
         uint256 _validUntil
@@ -73,7 +72,6 @@ contract TestSetup is Test {
         offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = Orderbook.Constraints({
-            minFillAmount: _minFillAmount,
             maxSlippageBps: _maxSlippageBps,
             validFrom: uint64(_validFrom),
             validUntil: uint64(_validUntil)
@@ -92,7 +90,6 @@ contract TestSetup is Test {
             (offer, constraints) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
@@ -109,7 +106,6 @@ contract TestSetup is Test {
             (offer, constraints) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil

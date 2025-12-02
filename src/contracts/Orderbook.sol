@@ -94,7 +94,6 @@ contract Orderbook is ReentrancyGuard {
 
     /// @notice Time and risk controls applied to an order.
     struct Constraints {
-        uint256 minFillAmount; // Minimum base asset fill (offer side)
         uint256 maxSlippageBps; // Max basis point deviation allowed by settlement engine
         uint64 validFrom;
         uint64 validUntil;
@@ -328,7 +327,6 @@ contract Orderbook is ReentrancyGuard {
         Constraints memory _constraints
     ) internal view {
         if (
-            _constraints.minFillAmount == 0 ||
             _constraints.maxSlippageBps == 0 ||
             _constraints.validFrom < block.timestamp ||
             _constraints.validUntil <= _constraints.validFrom

@@ -121,7 +121,6 @@ contract CancelOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 _token,
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil

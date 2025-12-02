@@ -22,7 +22,6 @@ contract CreateEthOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
@@ -69,7 +68,6 @@ contract CreateEthOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
@@ -94,7 +92,6 @@ contract CreateEthOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
@@ -120,7 +117,6 @@ contract CreateEthOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
@@ -160,7 +156,6 @@ contract CreateEthOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 0,
-                MIN_FILL_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
@@ -179,6 +174,8 @@ contract CreateEthOfferTest is TestSetup {
     }
 
     function test_CreateEthOffer_Reverts_InvalidConstraints() public {
+        vm.startPrank(maker);
+
         (
             Orderbook.TokenAmount memory offer,
             Orderbook.Constraints memory constraints
@@ -186,13 +183,10 @@ contract CreateEthOfferTest is TestSetup {
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
                 0,
-                MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
             );
 
-        vm.startPrank(maker);
-
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
@@ -204,24 +198,6 @@ contract CreateEthOfferTest is TestSetup {
         (offer, constraints) = _generateOfferAmountsAndConstraints(
             orderbook.ETH_ADDRESS(),
             OFFER_AMOUNT,
-            MIN_FILL_AMOUNT,
-            0,
-            validFrom,
-            validUntil
-        );
-
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-        orderbook.createEthOffer{value: OFFER_AMOUNT}(
-            offer,
-            address(requestedToken),
-            constraints
-        );
-        vm.stopPrank();
-
-        (offer, constraints) = _generateOfferAmountsAndConstraints(
-            orderbook.ETH_ADDRESS(),
-            OFFER_AMOUNT,
-            MIN_FILL_AMOUNT,
             MAX_SLIPPAGE_BPS,
             block.timestamp - 1,
             validUntil
@@ -238,7 +214,6 @@ contract CreateEthOfferTest is TestSetup {
         (offer, constraints) = _generateOfferAmountsAndConstraints(
             orderbook.ETH_ADDRESS(),
             OFFER_AMOUNT,
-            MIN_FILL_AMOUNT,
             MAX_SLIPPAGE_BPS,
             validFrom,
             block.timestamp
