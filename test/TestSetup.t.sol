@@ -25,9 +25,10 @@ contract TestSetup is Test {
 
     uint256 public constant OFFER_AMOUNT = 10 ether;
     uint256 public constant MIN_FILL_AMOUNT = 1 ether;
-    uint256 public constant MAX_SLIPPAGE_BPS = 100;
     uint256 public validFrom = uint64(block.timestamp);
     uint256 public validUntil = uint64(block.timestamp + 1 days);
+
+    uint128 public constant MAX_SLIPPAGE_BPS = 100;
 
     function setUp() public virtual {
         owner = makeAddr("owner");
@@ -72,7 +73,7 @@ contract TestSetup is Test {
         offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = Orderbook.Constraints({
-            maxSlippageBps: _maxSlippageBps,
+            maxSlippageBps: uint128(_maxSlippageBps),
             validFrom: uint64(_validFrom),
             validUntil: uint64(_validUntil)
         });

@@ -143,7 +143,7 @@ contract UpdateConstraintsTest is TestSetup {
         orderbook.updateConstraints(
             offerId,
             Orderbook.Constraints({
-                maxSlippageBps: newMaxSlippageBps,
+                maxSlippageBps: uint128(newMaxSlippageBps),
                 validFrom: 0,
                 validUntil: uint64(newValidUntil)
             })
@@ -153,7 +153,7 @@ contract UpdateConstraintsTest is TestSetup {
         orderbook.updateConstraints(
             offerId,
             Orderbook.Constraints({
-                maxSlippageBps: newMaxSlippageBps,
+                maxSlippageBps: uint128(newMaxSlippageBps),
                 validFrom: uint64(newValidFrom),
                 validUntil: uint64(newValidFrom)
             })

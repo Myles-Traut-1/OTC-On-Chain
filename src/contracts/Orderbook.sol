@@ -93,7 +93,7 @@ contract Orderbook is ReentrancyGuard {
 
     /// @notice Time and risk controls applied to an order.
     struct Constraints {
-        uint256 maxSlippageBps; // Max basis point deviation allowed by settlement engine
+        uint128 maxSlippageBps; // Max basis point deviation allowed by settlement engine
         uint64 validFrom;
         uint64 validUntil;
     }
@@ -313,6 +313,30 @@ contract Orderbook is ReentrancyGuard {
         }
     }
 
+    function _encodeConstraints(
+        uint64 _validFrom,
+        uint64 _validUntil,
+        uint128 _maxSlippageBps
+    ) internal pure returns (uint256 encodedConstraints) {
+        // Shift '_validUntil' to the left by 64 bits, '_maxSlippageBps' to the left by 128 bits, and combine with '_validFrom' using bitwise OR
+        encodedConstraints =
+            (uint256(_maxSlippageBps) << 128) |
+            (uint256(_validUntil) << 64) |
+            uint256(_validFrom);
+    }
+
+    function _decodeConstraints(
+        uint256 _encodedConstraints
+    )
+        internal
+        pure
+        returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
+    {
+        validFrom = uint64(_encodedConstraints & 0xFFFFFFFFFFFFFFFF); // Mask for the lower 64 bits
+        validUntil = uint64(_encodedConstraints >> 64);
+        maxSlippageBps = uint128(_encodedConstraints >> 128);
+    }
+
     function _generateOrderId(
         address _offeredToken,
         uint256 _amount,
@@ -368,5 +392,23 @@ contract Orderbook is ReentrancyGuard {
         bytes32 _offerId
     ) external view returns (Offer memory offer, OfferStatus status) {
         return _getOffer(_offerId);
+    }
+
+    function encodeConstraints(
+        uint64 _validFrom,
+        uint64 _validUntil,
+        uint128 _maxSlippageBps
+    ) public pure returns (uint256) {
+        return _encodeConstraints(_validFrom, _validUntil, _maxSlippageBps);
+    }
+
+    function decodeConstraints(
+        uint256 _encodedConstraints
+    )
+        public
+        pure
+        returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
+    {
+        return _decodeConstraints(_encodedConstraints);
     }
 }
