@@ -79,4 +79,72 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(validFrom, _validFrom);
         assertEq(validUntil, _validUntil);
     }
+
+    function test_Fuzz_createEthOffer(
+        uint256 _offeredAmount,
+        uint64 _validFrom,
+        uint64 _validUntil,
+        uint128 _slippageBps
+    ) public {
+        uint256 minOfferAmount = orderbook.MIN_OFFER_AMOUNT();
+        uint256 maxSlippageBps = orderbook.MAX_SLIPPAGE();
+        uint256 minSlippageBps = orderbook.MIN_SLIPPAGE();
+
+        _offeredAmount = bound(
+            _offeredAmount,
+            minOfferAmount,
+            INITIAL_MAKER_BALANCE
+        );
+
+        _validFrom = uint64(
+            bound(
+                _validFrom,
+                uint64(block.timestamp),
+                uint64(block.timestamp + 7 days)
+            )
+        );
+
+        _validUntil = uint64(
+            bound(_validUntil, _validFrom + 1, _validFrom + 30 days)
+        );
+
+        _slippageBps = uint128(
+            bound(_slippageBps, minSlippageBps, maxSlippageBps)
+        ); // 0.5% - 2%
+
+        vm.startPrank(maker);
+        Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
+            token: address(orderbook.ETH_ADDRESS()),
+            amount: _offeredAmount
+        });
+
+        uint256 constraints = orderbook.encodeConstraints(
+            _validFrom,
+            _validUntil,
+            _slippageBps
+        );
+
+        bytes32 offerId = orderbook.createEthOffer{value: _offeredAmount}(
+            _offer,
+            address(requestedToken),
+            constraints
+        );
+        vm.stopPrank();
+
+        (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
+            .getOffer(offerId);
+
+        assertEq(offer.maker, maker);
+        assertEq(offer.offer.token, address(orderbook.ETH_ADDRESS()));
+        assertEq(offer.offer.amount, _offeredAmount);
+        assertEq(offer.constraints, constraints);
+        assertEq(offer.requestedToken, address(requestedToken));
+        assert(status == Orderbook.OfferStatus.Open);
+
+        (uint64 validFrom, uint64 validUntil, uint128 slippageBps) = orderbook
+            .decodeConstraints(offer.constraints);
+        assertEq(slippageBps, _slippageBps);
+        assertEq(validFrom, _validFrom);
+        assertEq(validUntil, _validUntil);
+    }
 }
