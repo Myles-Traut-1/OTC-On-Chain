@@ -30,6 +30,11 @@ contract CancelOfferTest is TestSetup {
         assertEq(remainingAmount, OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
+        emit Orderbook.OfferStatusUpdated(
+            offerId,
+            Orderbook.OfferStatus.Cancelled
+        );
+        vm.expectEmit(true, true, true, true);
         emit Orderbook.OfferCancelled(offerId, maker);
         orderbook.cancelOffer(offerId);
         vm.stopPrank();

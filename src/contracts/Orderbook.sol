@@ -252,6 +252,7 @@ contract Orderbook is ReentrancyGuard {
             );
         }
 
+        emit OfferStatusUpdated(_offerId, OfferStatus.Cancelled);
         emit OfferCancelled(_offerId, msg.sender);
     }
 
