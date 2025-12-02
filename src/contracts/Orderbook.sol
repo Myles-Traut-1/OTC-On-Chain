@@ -145,15 +145,17 @@ contract Orderbook is ReentrancyGuard {
         checkZeroAddress(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
-        returns (bytes32 _offerId)
+        returns (bytes32 offerId)
     {
-        _offerId = _generateOrderId(
+        _validateConstraints(_constraints);
+
+        offerId = _generateOrderId(
             _offer.token,
             _offer.amount,
             _requestedToken
         );
 
-        _validateConstraints(_constraints);
+        _createOffer(offerId, _offer, _requestedToken, _constraints);
 
         IERC20(_offer.token).safeTransferFrom(
             msg.sender,
@@ -161,19 +163,8 @@ contract Orderbook is ReentrancyGuard {
             _offer.amount
         );
 
-        offers[_offerId] = Offer({
-            maker: msg.sender,
-            offer: _offer,
-            requestedToken: _requestedToken,
-            constraints: _constraints,
-            remainingAmount: _offer.amount
-        });
-
-        offerStatusById[_offerId] = OfferStatus.Open;
-        nonce++;
-
         emit OfferCreated(
-            _offerId,
+            offerId,
             msg.sender,
             _offer,
             _requestedToken,
@@ -191,7 +182,7 @@ contract Orderbook is ReentrancyGuard {
         checkZeroAddress(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
-        returns (bytes32 _offerId)
+        returns (bytes32 offerId)
     {
         if (msg.value != _offer.amount) {
             revert Orderbook__InvalidTokenAmount();
@@ -201,30 +192,21 @@ contract Orderbook is ReentrancyGuard {
             revert Orderbook__NotETH();
         }
 
-        _offerId = _generateOrderId(ETH_ADDRESS, msg.value, _requestedToken);
-
         _validateConstraints(_constraints);
 
+        offerId = _generateOrderId(ETH_ADDRESS, _offer.amount, _requestedToken);
+
+        _createOffer(offerId, _offer, _requestedToken, _constraints);
+
         // Transfer ETH to escrow
-        (bool success, ) = address(escrow).call{value: msg.value}("");
+        (bool success, ) = address(escrow).call{value: _offer.amount}("");
 
         if (!success) {
             revert Orderbook__ETHTransferFailed();
         }
 
-        offers[_offerId] = Offer({
-            maker: msg.sender,
-            offer: _offer,
-            requestedToken: _requestedToken,
-            constraints: _constraints,
-            remainingAmount: msg.value
-        });
-
-        offerStatusById[_offerId] = OfferStatus.Open;
-        nonce++;
-
         emit OfferCreated(
-            _offerId,
+            offerId,
             msg.sender,
             _offer,
             _requestedToken,
@@ -334,6 +316,24 @@ contract Orderbook is ReentrancyGuard {
                     _requestedToken
                 )
             );
+    }
+
+    function _createOffer(
+        bytes32 _offerId,
+        TokenAmount memory _offer,
+        address _requestedToken,
+        Constraints memory _constraints
+    ) internal {
+        offers[_offerId] = Offer({
+            maker: msg.sender,
+            offer: _offer,
+            requestedToken: _requestedToken,
+            constraints: _constraints,
+            remainingAmount: _offer.amount
+        });
+
+        offerStatusById[_offerId] = OfferStatus.Open;
+        nonce++;
     }
 
     function _getOffer(
