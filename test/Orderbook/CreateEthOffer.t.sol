@@ -192,7 +192,12 @@ contract CreateEthOfferTest is TestSetup {
                 validUntil
             );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "MIN_SLIPPAGE"
+            )
+        );
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
             address(requestedToken),
@@ -208,7 +213,12 @@ contract CreateEthOfferTest is TestSetup {
             validUntil
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "VALID_FROM"
+            )
+        );
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
             address(requestedToken),
@@ -224,7 +234,12 @@ contract CreateEthOfferTest is TestSetup {
             block.timestamp
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "VALID_UNTIL"
+            )
+        );
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
             address(requestedToken),

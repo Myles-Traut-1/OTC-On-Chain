@@ -26,7 +26,7 @@ contract Orderbook is ReentrancyGuard {
     error Orderbook__ZeroAddress();
     error Orderbook__InsufficientBalance();
     error Orderbook__InvalidTokenAmount();
-    error Orderbook__InvalidConstraints();
+    error Orderbook__InvalidConstraints(string reason);
     error Orderbook__NotETH();
     error Orderbook__ETHTransferFailed();
     error Orderbook__NotOfferCreator();
@@ -307,13 +307,14 @@ contract Orderbook is ReentrancyGuard {
             uint64 validUntil,
             uint128 slippageBps
         ) = decodeConstraints(_constraints);
-        if (
-            slippageBps > MAX_SLIPPAGE ||
-            slippageBps < MIN_SLIPPAGE ||
-            validFrom < block.timestamp ||
-            validUntil <= validFrom
-        ) {
-            revert Orderbook__InvalidConstraints();
+        if (slippageBps > MAX_SLIPPAGE) {
+            revert Orderbook__InvalidConstraints("MAX_SLIPPAGE");
+        } else if (slippageBps < MIN_SLIPPAGE) {
+            revert Orderbook__InvalidConstraints("MIN_SLIPPAGE");
+        } else if (validFrom < block.timestamp) {
+            revert Orderbook__InvalidConstraints("VALID_FROM");
+        } else if (validUntil <= validFrom) {
+            revert Orderbook__InvalidConstraints("VALID_UNTIL");
         }
     }
 

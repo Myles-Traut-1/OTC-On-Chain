@@ -166,7 +166,12 @@ contract CreateTokenOfferTest is TestSetup {
                 validUntil
             );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "MIN_SLIPPAGE"
+            )
+        );
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
 
@@ -178,7 +183,12 @@ contract CreateTokenOfferTest is TestSetup {
             validUntil
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "VALID_FROM"
+            )
+        );
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
 
@@ -190,7 +200,12 @@ contract CreateTokenOfferTest is TestSetup {
             block.timestamp
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "VALID_UNTIL"
+            )
+        );
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
     }

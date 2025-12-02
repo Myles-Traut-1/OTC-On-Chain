@@ -136,7 +136,12 @@ contract UpdateConstraintsTest is TestSetup {
             uint128(newMaxSlippageBps)
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "VALID_FROM"
+            )
+        );
         orderbook.updateConstraints(offerId, invalidConstraints);
 
         invalidConstraints = orderbook.encodeConstraints(
@@ -145,7 +150,12 @@ contract UpdateConstraintsTest is TestSetup {
             uint128(newMaxSlippageBps)
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "VALID_UNTIL"
+            )
+        );
         orderbook.updateConstraints(offerId, invalidConstraints);
 
         invalidConstraints = orderbook.encodeConstraints(
@@ -154,7 +164,12 @@ contract UpdateConstraintsTest is TestSetup {
             uint128(0)
         );
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "MIN_SLIPPAGE"
+            )
+        );
         orderbook.updateConstraints(offerId, invalidConstraints);
     }
 }

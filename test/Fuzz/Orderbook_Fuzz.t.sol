@@ -8,16 +8,24 @@ import {Escrow} from "../../src/contracts/Escrow.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract OrderbookFuzzTest is TestSetup {
+    uint256 minOfferAmount;
+    uint256 maxSlippageBps;
+    uint256 minSlippageBps;
+
+    function setUp() public override {
+        super.setUp();
+
+        minOfferAmount = orderbook.MIN_OFFER_AMOUNT();
+        maxSlippageBps = orderbook.MAX_SLIPPAGE();
+        minSlippageBps = orderbook.MIN_SLIPPAGE();
+    }
+
     function test_Fuzz_createTokenOffer(
         uint256 _offeredAmount,
         uint64 _validFrom,
         uint64 _validUntil,
         uint128 _slippageBps
     ) public {
-        uint256 minOfferAmount = orderbook.MIN_OFFER_AMOUNT();
-        uint256 maxSlippageBps = orderbook.MAX_SLIPPAGE();
-        uint256 minSlippageBps = orderbook.MIN_SLIPPAGE();
-
         _offeredAmount = bound(
             _offeredAmount,
             minOfferAmount,
@@ -41,6 +49,7 @@ contract OrderbookFuzzTest is TestSetup {
         ); // 0.5% - 2%
 
         vm.startPrank(maker);
+
         Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
             token: address(offeredToken),
             amount: _offeredAmount
@@ -56,15 +65,20 @@ contract OrderbookFuzzTest is TestSetup {
             address(orderbook),
             _offeredAmount
         );
+
         bytes32 offerId = orderbook.createTokenOffer(
             _offer,
             address(requestedToken),
             constraints
         );
-        vm.stopPrank();
 
         (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
             .getOffer(offerId);
+
+        assertEq(
+            offeredToken.balanceOf(maker),
+            INITIAL_MAKER_BALANCE - _offeredAmount
+        );
 
         assertEq(offer.maker, maker);
         assertEq(offer.offer.token, address(offeredToken));
@@ -73,11 +87,12 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(offer.requestedToken, address(requestedToken));
         assert(status == Orderbook.OfferStatus.Open);
 
-        (uint64 validFrom, uint64 validUntil, uint128 slippageBps) = orderbook
-            .decodeConstraints(offer.constraints);
-        assertEq(slippageBps, _slippageBps);
-        assertEq(validFrom, _validFrom);
-        assertEq(validUntil, _validUntil);
+        _assertConstraints(
+            offer.constraints,
+            _validFrom,
+            _validUntil,
+            _slippageBps
+        );
     }
 
     function test_Fuzz_createEthOffer(
@@ -86,9 +101,7 @@ contract OrderbookFuzzTest is TestSetup {
         uint64 _validUntil,
         uint128 _slippageBps
     ) public {
-        uint256 minOfferAmount = orderbook.MIN_OFFER_AMOUNT();
-        uint256 maxSlippageBps = orderbook.MAX_SLIPPAGE();
-        uint256 minSlippageBps = orderbook.MIN_SLIPPAGE();
+        uint256 initialMakerBalance = maker.balance;
 
         _offeredAmount = bound(
             _offeredAmount,
@@ -134,6 +147,8 @@ contract OrderbookFuzzTest is TestSetup {
         (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
             .getOffer(offerId);
 
+        assertEq(maker.balance, initialMakerBalance - _offeredAmount);
+
         assertEq(offer.maker, maker);
         assertEq(offer.offer.token, address(orderbook.ETH_ADDRESS()));
         assertEq(offer.offer.amount, _offeredAmount);
@@ -141,8 +156,21 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(offer.requestedToken, address(requestedToken));
         assert(status == Orderbook.OfferStatus.Open);
 
+        _assertConstraints(constraints, _validFrom, _validUntil, _slippageBps);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    function _assertConstraints(
+        uint256 _constraints,
+        uint64 _validFrom,
+        uint64 _validUntil,
+        uint128 _slippageBps
+    ) internal {
         (uint64 validFrom, uint64 validUntil, uint128 slippageBps) = orderbook
-            .decodeConstraints(offer.constraints);
+            .decodeConstraints(_constraints);
         assertEq(slippageBps, _slippageBps);
         assertEq(validFrom, _validFrom);
         assertEq(validUntil, _validUntil);
