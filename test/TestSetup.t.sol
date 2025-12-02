@@ -81,7 +81,8 @@ contract TestSetup is Test {
     }
 
     function _createAndReturnOffer(
-        address _offeredToken
+        address _offeredToken,
+        address _requestedToken
     ) internal returns (bytes32 orderId) {
         Orderbook.TokenAmount memory offer;
         Orderbook.Constraints memory constraints;
@@ -98,7 +99,7 @@ contract TestSetup is Test {
             vm.startPrank(maker);
             orderId = orderbook.createEthOffer{value: OFFER_AMOUNT}(
                 offer,
-                address(requestedToken),
+                address(_requestedToken),
                 constraints
             );
             vm.stopPrank();
@@ -115,7 +116,7 @@ contract TestSetup is Test {
             offeredToken.approve(address(orderbook), OFFER_AMOUNT);
             orderId = orderbook.createTokenOffer(
                 offer,
-                address(requestedToken),
+                address(_requestedToken),
                 constraints
             );
             vm.stopPrank();

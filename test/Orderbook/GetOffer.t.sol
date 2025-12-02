@@ -6,7 +6,10 @@ import {Orderbook} from "../../src/contracts/Orderbook.sol";
 
 contract Orderbook_GetOffer is TestSetup {
     function test_GetOfferReturnsOfferAndStatus() public {
-        bytes32 offerId = _createAndReturnOffer(address(offeredToken));
+        bytes32 offerId = _createAndReturnOffer(
+            address(offeredToken),
+            address(requestedToken)
+        );
 
         (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
             .getOffer(offerId);
@@ -21,7 +24,8 @@ contract Orderbook_GetOffer is TestSetup {
         assert(status == Orderbook.OfferStatus.Open);
 
         bytes32 etherOfferId = _createAndReturnOffer(
-            address(orderbook.ETH_ADDRESS())
+            address(orderbook.ETH_ADDRESS()),
+            address(requestedToken)
         );
 
         (offer, status) = orderbook.getOffer(etherOfferId);

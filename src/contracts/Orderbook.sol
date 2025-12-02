@@ -47,11 +47,9 @@ contract Orderbook is ReentrancyGuard {
         Constraints constraints
     );
     event OfferCancelled(bytes32 indexed orderId, address indexed maker);
-    event OfferUpdated(
+    event OfferConstraintsUpdated(
         bytes32 indexed orderId,
         address indexed maker,
-        TokenAmount newAmounts,
-        address requestedToken,
         Constraints newConstraints
     );
 
@@ -264,12 +262,10 @@ contract Orderbook is ReentrancyGuard {
         emit OfferCancelled(_offerId, msg.sender);
     }
 
-    function updateOffer(
+    function updateConstraints(
         bytes32 _offerId,
-        TokenAmount calldata _newAmounts,
-        Constraints calldata _newConstraints,
-        address _requestedToken
-    ) external checkZeroAddress(_requestedToken) {
+        Constraints calldata _newConstraints
+    ) external {
         (Offer memory offer, OfferStatus status) = _getOffer(_offerId);
         if (offer.maker != msg.sender) {
             revert Orderbook__NotOfferCreator();
@@ -277,26 +273,14 @@ contract Orderbook is ReentrancyGuard {
         if (status != OfferStatus.Open) {
             revert Orderbook__OfferNotOpen();
         }
-        _validateTokenAmounts(_newAmounts);
+
         _validateConstraints(_newConstraints);
 
-        offer.offer.token = _newAmounts.token;
-        offer.offer.amount = _newAmounts.amount;
         offer.constraints = _newConstraints;
-
-        if (_requestedToken != offer.requestedToken) {
-            offer.requestedToken = _requestedToken;
-        }
 
         offers[_offerId] = offer;
 
-        emit OfferUpdated(
-            _offerId,
-            msg.sender,
-            _newAmounts,
-            _requestedToken,
-            _newConstraints
-        );
+        emit OfferConstraintsUpdated(_offerId, msg.sender, _newConstraints);
     }
 
     function contribute(bytes32 _offerId) public {
