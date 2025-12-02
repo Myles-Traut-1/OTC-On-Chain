@@ -138,7 +138,7 @@ contract CreateTokenOfferTest is TestSetup {
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
-                0,
+                orderbook.MIN_OFFER_AMOUNT() - 1,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil

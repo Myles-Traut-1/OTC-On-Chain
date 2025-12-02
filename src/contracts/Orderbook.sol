@@ -75,6 +75,8 @@ contract Orderbook is ReentrancyGuard {
     address public constant ETH_ADDRESS =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    uint256 public constant MIN_OFFER_AMOUNT = 1e6; //Prevent griefing with dust offers
+
     /// @notice Lifecycle states tracked on-chain to prevent replays.
     enum OfferStatus {
         None,
@@ -286,7 +288,7 @@ contract Orderbook is ReentrancyGuard {
     }
 
     function _validateTokenAmounts(TokenAmount memory _offer) internal pure {
-        if (_offer.amount == 0) {
+        if (_offer.amount < MIN_OFFER_AMOUNT) {
             revert Orderbook__InvalidTokenAmount();
         }
         if (_offer.token == address(0)) {

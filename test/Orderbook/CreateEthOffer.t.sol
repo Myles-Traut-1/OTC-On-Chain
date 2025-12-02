@@ -160,7 +160,7 @@ contract CreateEthOfferTest is TestSetup {
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
-                0,
+                orderbook.MIN_OFFER_AMOUNT() - 1,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
