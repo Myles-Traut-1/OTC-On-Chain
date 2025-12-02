@@ -122,7 +122,7 @@ contract CancelOfferTest is TestSetup {
     function _createOffer(address _token) internal returns (bytes32 offerId) {
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 _token,
                 OFFER_AMOUNT,

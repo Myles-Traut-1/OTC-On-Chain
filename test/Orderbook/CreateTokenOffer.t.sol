@@ -18,7 +18,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,
@@ -70,7 +70,7 @@ contract CreateTokenOfferTest is TestSetup {
             address maker_,
             Orderbook.TokenAmount memory offer_,
             address requestedToken_,
-            Orderbook.Constraints memory constraints_,
+            uint256 constraints_,
             uint256 remainingAmount
         ) = orderbook.offers(offerId);
 
@@ -80,10 +80,18 @@ contract CreateTokenOfferTest is TestSetup {
         assertEq(offer_.token, address(offeredToken));
         assertEq(offer_.amount, OFFER_AMOUNT);
         assertEq(requestedToken_, address(requestedToken));
-        assertEq(constraints_.maxSlippageBps, MAX_SLIPPAGE_BPS);
-        assertEq(constraints_.validFrom, uint64(validFrom));
-        assertEq(constraints_.validUntil, uint64(validUntil));
+        assertEq(constraints_, constraints);
         assertEq(remainingAmount, OFFER_AMOUNT);
+
+        (
+            uint64 validFrom_,
+            uint64 validUntil_,
+            uint128 maxSlippageBps_
+        ) = orderbook.decodeConstraints(constraints_);
+
+        assertEq(maxSlippageBps_, uint128(MAX_SLIPPAGE_BPS));
+        assertEq(validFrom_, uint64(validFrom));
+        assertEq(validUntil_, uint64(validUntil));
 
         Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
 
@@ -97,7 +105,7 @@ contract CreateTokenOfferTest is TestSetup {
     function test_CreateTokenOffer_Reverts_ZeroAddress() public {
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,
@@ -127,7 +135,7 @@ contract CreateTokenOfferTest is TestSetup {
     function test_CreateTokenOffer_Reverts_InvalidAmounts() public {
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 0,
@@ -149,7 +157,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,

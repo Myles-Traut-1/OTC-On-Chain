@@ -64,20 +64,16 @@ contract TestSetup is Test {
         uint256 _validUntil
     )
         internal
-        pure
-        returns (
-            Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
-        )
+        view
+        returns (Orderbook.TokenAmount memory offer, uint256 constraints)
     {
         offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
-        constraints = Orderbook.Constraints({
-            maxSlippageBps: uint128(_maxSlippageBps),
-            validFrom: uint64(_validFrom),
-            validUntil: uint64(_validUntil)
-        });
-
+        constraints = orderbook.encodeConstraints(
+            uint64(_validFrom),
+            uint64(_validUntil),
+            uint128(_maxSlippageBps)
+        );
         return (offer, constraints);
     }
 
@@ -86,7 +82,7 @@ contract TestSetup is Test {
         address _requestedToken
     ) internal returns (bytes32 orderId) {
         Orderbook.TokenAmount memory offer;
-        Orderbook.Constraints memory constraints;
+        uint256 constraints;
 
         if (_offeredToken == orderbook.ETH_ADDRESS()) {
             (offer, constraints) = _generateOfferAmountsAndConstraints(

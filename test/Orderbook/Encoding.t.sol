@@ -5,7 +5,7 @@ import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
 
 contract UpdateConstraintsTest is TestSetup {
-    function test_EncodeDecodeConstraints() public {
+    function test_EncodeDecodeConstraints() public view {
         uint256 packed = orderbook.encodeConstraints(
             uint64(validFrom),
             uint64(validUntil),

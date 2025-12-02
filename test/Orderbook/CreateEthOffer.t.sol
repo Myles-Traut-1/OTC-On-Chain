@@ -18,7 +18,7 @@ contract CreateEthOfferTest is TestSetup {
 
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
@@ -69,7 +69,7 @@ contract CreateEthOfferTest is TestSetup {
     function test_CreateEthOffer_Reverts_ZeroAddress() public {
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
@@ -93,7 +93,7 @@ contract CreateEthOfferTest is TestSetup {
     function test_CreateEthOffer_Reverts_NotETH() public {
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,
@@ -118,7 +118,7 @@ contract CreateEthOfferTest is TestSetup {
         // Arrange
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,
@@ -157,7 +157,7 @@ contract CreateEthOfferTest is TestSetup {
     function test_CreateEthOffer_Reverts_InvalidAmounts() public {
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 0,
@@ -183,7 +183,7 @@ contract CreateEthOfferTest is TestSetup {
 
         (
             Orderbook.TokenAmount memory offer,
-            Orderbook.Constraints memory constraints
+            uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 orderbook.ETH_ADDRESS(),
                 OFFER_AMOUNT,

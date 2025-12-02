@@ -44,13 +44,13 @@ contract Orderbook is ReentrancyGuard {
         address indexed maker,
         TokenAmount offer,
         address requestedToken,
-        Constraints constraints
+        uint256 constraints
     );
     event OfferCancelled(bytes32 indexed orderId, address indexed maker);
     event OfferConstraintsUpdated(
         bytes32 indexed orderId,
         address indexed maker,
-        Constraints newConstraints
+        uint256 newConstraints
     );
     event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
 
@@ -91,19 +91,12 @@ contract Orderbook is ReentrancyGuard {
         uint256 amount;
     }
 
-    /// @notice Time and risk controls applied to an order.
-    struct Constraints {
-        uint128 maxSlippageBps; // Max basis point deviation allowed by settlement engine
-        uint64 validFrom;
-        uint64 validUntil;
-    }
-
     /// @notice Canonical order payload hashed for EIP-712 signatures.
     struct Offer {
         address maker; // Maker configuration
         TokenAmount offer; // Asset/amount maker is giving
         address requestedToken; // Asset maker expects
-        Constraints constraints;
+        uint256 constraints; // Packed constraints
         uint256 remainingAmount; // Fill and timing controls
     }
 
@@ -140,7 +133,7 @@ contract Orderbook is ReentrancyGuard {
     function createTokenOffer(
         TokenAmount memory _offer,
         address _requestedToken,
-        Constraints memory _constraints
+        uint256 _constraints
     )
         external
         checkZeroAddress(_requestedToken)
@@ -181,7 +174,7 @@ contract Orderbook is ReentrancyGuard {
     function createEthOffer(
         TokenAmount memory _offer,
         address _requestedToken,
-        Constraints memory _constraints
+        uint256 _constraints
     )
         external
         payable
@@ -258,7 +251,7 @@ contract Orderbook is ReentrancyGuard {
 
     function updateConstraints(
         bytes32 _offerId,
-        Constraints calldata _newConstraints
+        uint256 _newConstraints
     ) external {
         (Offer memory offer, OfferStatus status) = _getOffer(_offerId);
         if (offer.maker != msg.sender) {
@@ -301,13 +294,16 @@ contract Orderbook is ReentrancyGuard {
         }
     }
 
-    function _validateConstraints(
-        Constraints memory _constraints
-    ) internal view {
+    function _validateConstraints(uint256 _constraints) internal view {
+        (
+            uint64 validFrom,
+            uint64 validUntil,
+            uint128 maxSlippageBps
+        ) = decodeConstraints(_constraints);
         if (
-            _constraints.maxSlippageBps == 0 ||
-            _constraints.validFrom < block.timestamp ||
-            _constraints.validUntil <= _constraints.validFrom
+            maxSlippageBps == 0 ||
+            validFrom < block.timestamp ||
+            validUntil <= validFrom
         ) {
             revert Orderbook__InvalidConstraints();
         }
@@ -317,7 +313,7 @@ contract Orderbook is ReentrancyGuard {
         uint64 _validFrom,
         uint64 _validUntil,
         uint128 _maxSlippageBps
-    ) internal pure returns (uint256 encodedConstraints) {
+    ) private view returns (uint256 encodedConstraints) {
         // Shift '_validUntil' to the left by 64 bits, '_maxSlippageBps' to the left by 128 bits, and combine with '_validFrom' using bitwise OR
         encodedConstraints =
             (uint256(_maxSlippageBps) << 128) |
@@ -328,8 +324,8 @@ contract Orderbook is ReentrancyGuard {
     function _decodeConstraints(
         uint256 _encodedConstraints
     )
-        internal
-        pure
+        private
+        view
         returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
     {
         validFrom = uint64(_encodedConstraints & 0xFFFFFFFFFFFFFFFF); // Mask for the lower 64 bits
@@ -358,7 +354,7 @@ contract Orderbook is ReentrancyGuard {
         bytes32 _offerId,
         TokenAmount memory _offer,
         address _requestedToken,
-        Constraints memory _constraints
+        uint256 _constraints
     ) internal {
         offers[_offerId] = Offer({
             maker: msg.sender,
@@ -398,7 +394,7 @@ contract Orderbook is ReentrancyGuard {
         uint64 _validFrom,
         uint64 _validUntil,
         uint128 _maxSlippageBps
-    ) public pure returns (uint256) {
+    ) public view returns (uint256) {
         return _encodeConstraints(_validFrom, _validUntil, _maxSlippageBps);
     }
 
@@ -406,7 +402,7 @@ contract Orderbook is ReentrancyGuard {
         uint256 _encodedConstraints
     )
         public
-        pure
+        view
         returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
     {
         return _decodeConstraints(_encodedConstraints);

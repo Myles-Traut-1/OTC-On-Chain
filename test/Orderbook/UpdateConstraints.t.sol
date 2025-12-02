@@ -19,24 +19,25 @@ contract UpdateConstraintsTest is TestSetup {
             address(requestedToken)
         );
 
-        (, , , Orderbook.Constraints memory constraints_, ) = orderbook.offers(
-            offerId
-        );
-
-        assertEq(constraints_.maxSlippageBps, MAX_SLIPPAGE_BPS);
-        assertEq(constraints_.validFrom, validFrom);
-        assertEq(constraints_.validUntil, validUntil);
+        (, , , uint256 constraints_, ) = orderbook.offers(offerId);
 
         (
-            ,
-            Orderbook.Constraints memory newConstraints
-        ) = _generateOfferAmountsAndConstraints(
-                address(offeredToken),
-                OFFER_AMOUNT,
-                newMaxSlippageBps,
-                newValidFrom,
-                newValidUntil
-            );
+            uint64 validFrom,
+            uint64 validUntil,
+            uint128 maxSlippageBps
+        ) = orderbook.decodeConstraints(constraints_);
+
+        assertEq(maxSlippageBps, MAX_SLIPPAGE_BPS);
+        assertEq(validFrom, validFrom);
+        assertEq(validUntil, validUntil);
+
+        (, uint256 newConstraints) = _generateOfferAmountsAndConstraints(
+            address(offeredToken),
+            OFFER_AMOUNT,
+            newMaxSlippageBps,
+            newValidFrom,
+            newValidUntil
+        );
 
         vm.startPrank(maker);
 
@@ -50,14 +51,20 @@ contract UpdateConstraintsTest is TestSetup {
             address _maker,
             Orderbook.TokenAmount memory tokenAmounts,
             address _requestedToken,
-            Orderbook.Constraints memory updatedConstraints,
+            uint256 updatedConstraints,
             uint256 remainingAmount
         ) = orderbook.offers(offerId);
 
+        (
+            uint64 updatedValidFrom,
+            uint64 updatedValidUntil,
+            uint128 updatedMaxSlippageBps
+        ) = orderbook.decodeConstraints(updatedConstraints);
+
         // Assert Constraints have updated. Other values remain the same.
-        assertEq(updatedConstraints.maxSlippageBps, newMaxSlippageBps);
-        assertEq(updatedConstraints.validFrom, newValidFrom);
-        assertEq(updatedConstraints.validUntil, newValidUntil);
+        assertEq(updatedMaxSlippageBps, newMaxSlippageBps);
+        assertEq(updatedValidFrom, newValidFrom);
+        assertEq(updatedValidUntil, newValidUntil);
 
         assertEq(tokenAmounts.token, address(offeredToken));
         assertEq(tokenAmounts.amount, OFFER_AMOUNT);
@@ -68,7 +75,7 @@ contract UpdateConstraintsTest is TestSetup {
 
     /*//////////////////////////////////////////////////////////////
                                  NEGATIVE TESTS
-        //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
 
     function test_UpdateConstraints_Reverts_NotOfferCreator() public {
         address invalidCaller = makeAddr("invalidCaller");
@@ -77,16 +84,13 @@ contract UpdateConstraintsTest is TestSetup {
             address(requestedToken)
         );
 
-        (
-            ,
-            Orderbook.Constraints memory newConstraints
-        ) = _generateOfferAmountsAndConstraints(
-                address(offeredToken),
-                OFFER_AMOUNT,
-                newMaxSlippageBps,
-                newValidFrom,
-                newValidUntil
-            );
+        (, uint256 newConstraints) = _generateOfferAmountsAndConstraints(
+            address(offeredToken),
+            OFFER_AMOUNT,
+            newMaxSlippageBps,
+            newValidFrom,
+            newValidUntil
+        );
 
         vm.startPrank(invalidCaller);
 
@@ -103,16 +107,13 @@ contract UpdateConstraintsTest is TestSetup {
         // Simulate that the offer is in progress
         orderbook.contribute(offerId);
 
-        (
-            ,
-            Orderbook.Constraints memory newConstraints
-        ) = _generateOfferAmountsAndConstraints(
-                address(offeredToken),
-                OFFER_AMOUNT,
-                newMaxSlippageBps,
-                newValidFrom,
-                newValidUntil
-            );
+        (, uint256 newConstraints) = _generateOfferAmountsAndConstraints(
+            address(offeredToken),
+            OFFER_AMOUNT,
+            newMaxSlippageBps,
+            newValidFrom,
+            newValidUntil
+        );
 
         vm.startPrank(maker);
 
@@ -129,34 +130,31 @@ contract UpdateConstraintsTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-        orderbook.updateConstraints(
-            offerId,
-            Orderbook.Constraints({
-                maxSlippageBps: 0,
-                validFrom: uint64(newValidFrom),
-                validUntil: uint64(newValidUntil)
-            })
+        uint256 invalidConstraints = orderbook.encodeConstraints(
+            0,
+            uint64(newValidUntil),
+            uint128(newMaxSlippageBps)
         );
 
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-        orderbook.updateConstraints(
-            offerId,
-            Orderbook.Constraints({
-                maxSlippageBps: uint128(newMaxSlippageBps),
-                validFrom: 0,
-                validUntil: uint64(newValidUntil)
-            })
+        orderbook.updateConstraints(offerId, invalidConstraints);
+
+        invalidConstraints = orderbook.encodeConstraints(
+            uint64(newValidFrom),
+            uint64(newValidFrom),
+            uint128(newMaxSlippageBps)
         );
 
         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-        orderbook.updateConstraints(
-            offerId,
-            Orderbook.Constraints({
-                maxSlippageBps: uint128(newMaxSlippageBps),
-                validFrom: uint64(newValidFrom),
-                validUntil: uint64(newValidFrom)
-            })
+        orderbook.updateConstraints(offerId, invalidConstraints);
+
+        invalidConstraints = orderbook.encodeConstraints(
+            uint64(newValidFrom),
+            uint64(newValidUntil),
+            uint128(0)
         );
+
+        vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
+        orderbook.updateConstraints(offerId, invalidConstraints);
     }
 }
