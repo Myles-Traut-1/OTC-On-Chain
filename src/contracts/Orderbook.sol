@@ -76,6 +76,9 @@ contract Orderbook is ReentrancyGuard {
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     uint256 public constant MIN_OFFER_AMOUNT = 1e6; //Prevent griefing with dust offers
+    uint256 public constant MIN_SLIPPAGE = 5; // 0.5% (scaled by 1000)
+    uint256 public constant MAX_SLIPPAGE = 20; // Representing 2% (scaled by 1000)
+    uint256 public constant SCALE = 1e3; // Scale factor for basis points calculations
 
     /// @notice Lifecycle states tracked on-chain to prevent replays.
     enum OfferStatus {
@@ -94,6 +97,8 @@ contract Orderbook is ReentrancyGuard {
     }
 
     /// @notice Canonical order payload hashed for EIP-712 signatures.
+    /// @dev Constraints are packed into a single uint256 for gas efficiency.
+    /// @dev Constraintsts = uint64 validFrom | uint64 validUntil | uint128 maxSlippageBps
     struct Offer {
         address maker; // Maker configuration
         TokenAmount offer; // Asset/amount maker is giving
@@ -300,10 +305,11 @@ contract Orderbook is ReentrancyGuard {
         (
             uint64 validFrom,
             uint64 validUntil,
-            uint128 maxSlippageBps
+            uint128 slippageBps
         ) = decodeConstraints(_constraints);
         if (
-            maxSlippageBps == 0 ||
+            slippageBps > MAX_SLIPPAGE ||
+            slippageBps < MIN_SLIPPAGE ||
             validFrom < block.timestamp ||
             validUntil <= validFrom
         ) {

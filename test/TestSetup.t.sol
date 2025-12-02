@@ -28,7 +28,7 @@ contract TestSetup is Test {
     uint256 public validFrom = uint64(block.timestamp);
     uint256 public validUntil = uint64(block.timestamp + 1 days);
 
-    uint128 public constant MAX_SLIPPAGE_BPS = 100;
+    uint128 public constant MAX_SLIPPAGE_BPS = 20; // 2%
 
     function setUp() public virtual {
         owner = makeAddr("owner");

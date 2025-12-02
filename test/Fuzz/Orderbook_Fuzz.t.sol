@@ -14,6 +14,30 @@ contract OrderbookFuzzTest is TestSetup {
         uint64 _validUntil,
         uint128 _maxSlippageBps
     ) public {
-        _offeredAmount = bound(_offeredAmount, 1, INITIAL_MAKER_BALANCE);
+        uint256 minOfferAmount = orderbook.MIN_OFFER_AMOUNT();
+        uint256 maxSlippageBps = orderbook.MAX_SLIPPAGE();
+        uint256 minSlippageBps = orderbook.MIN_SLIPPAGE();
+
+        _offeredAmount = bound(
+            _offeredAmount,
+            minOfferAmount,
+            INITIAL_MAKER_BALANCE
+        );
+
+        _validFrom = uint64(
+            bound(
+                _validFrom,
+                uint64(block.timestamp),
+                uint64(block.timestamp + 7 days)
+            )
+        );
+
+        _validUntil = uint64(
+            bound(_validUntil, _validFrom + 1, _validFrom + 30 days)
+        );
+
+        _maxSlippageBps = uint128(
+            bound(_maxSlippageBps, minSlippageBps, maxSlippageBps)
+        ); // 0.5% - 2%
     }
 }
