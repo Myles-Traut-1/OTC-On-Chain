@@ -4,7 +4,7 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
 
-contract UpdateOfferConstraintsTest is TestSetup {
+contract UpdateConstraintsTest is TestSetup {
     uint256 public newMaxSlippageBps = MAX_SLIPPAGE_BPS / 2;
     uint256 public newValidFrom = validFrom + 100;
     uint256 public newValidUntil = validUntil + 100;
@@ -13,7 +13,7 @@ contract UpdateOfferConstraintsTest is TestSetup {
                             STATE UPDATES
     //////////////////////////////////////////////////////////////*/
 
-    function test_UpdateOfferConstraints() public {
+    function test_UpdateConstraints() public {
         bytes32 offerId = _createAndReturnOffer(
             address(offeredToken),
             address(requestedToken)
@@ -70,7 +70,7 @@ contract UpdateOfferConstraintsTest is TestSetup {
                                  NEGATIVE TESTS
         //////////////////////////////////////////////////////////////*/
 
-    function test_UpdateOffer_Reverts_NotOfferCreator() public {
+    function test_UpdateConstraints_Reverts_NotOfferCreator() public {
         address invalidCaller = makeAddr("invalidCaller");
         bytes32 offerId = _createAndReturnOffer(
             address(offeredToken),
@@ -94,7 +94,7 @@ contract UpdateOfferConstraintsTest is TestSetup {
         orderbook.updateConstraints(offerId, newConstraints);
     }
 
-    function test_UpdateOffer_RevertsIfStatusNotOpen() public {
+    function test_UpdateConstraints_RevertsIfStatusNotOpen() public {
         bytes32 offerId = _createAndReturnOffer(
             address(offeredToken),
             address(requestedToken)
@@ -121,7 +121,7 @@ contract UpdateOfferConstraintsTest is TestSetup {
         vm.stopPrank();
     }
 
-    function test_UpdateOffer_RevertsOnInvalidConstraints() public {
+    function test_UpdateConstraints_RevertsOnInvalidConstraints() public {
         bytes32 offerId = _createAndReturnOffer(
             address(offeredToken),
             address(requestedToken)
@@ -160,61 +160,3 @@ contract UpdateOfferConstraintsTest is TestSetup {
         );
     }
 }
-
-//         // Invalid maxSlippageBps
-
-//         (newOffer, newConstraints) = _generateOfferAmountsAndConstraints(
-//             address(offeredToken),
-//             newOfferAmount,
-//             newMinFillAmount,
-//             0,
-//             newValidFrom,
-//             newValidUntil
-//         );
-
-//         // invalid validFrom and validUntil
-
-//         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-//         orderbook.updateOffer(
-//             offerId,
-//             newOffer,
-//             newConstraints,
-//             address(requestedToken)
-//         );
-
-//         (newOffer, newConstraints) = _generateOfferAmountsAndConstraints(
-//             address(offeredToken),
-//             newOfferAmount,
-//             newMinFillAmount,
-//             newMaxSlippageBps,
-//             block.timestamp - 1,
-//             newValidUntil
-//         );
-
-//         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-//         orderbook.updateOffer(
-//             offerId,
-//             newOffer,
-//             newConstraints,
-//             address(requestedToken)
-//         );
-
-//         (newOffer, newConstraints) = _generateOfferAmountsAndConstraints(
-//             address(offeredToken),
-//             newOfferAmount,
-//             newMinFillAmount,
-//             newMaxSlippageBps,
-//             newValidFrom,
-//             newValidFrom
-//         );
-
-//         vm.expectRevert(Orderbook.Orderbook__InvalidConstraints.selector);
-//         orderbook.updateOffer(
-//             offerId,
-//             newOffer,
-//             newConstraints,
-//             address(requestedToken)
-//         );
-//         vm.stopPrank();
-//     }
-// }
