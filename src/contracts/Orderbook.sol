@@ -52,6 +52,7 @@ contract Orderbook is ReentrancyGuard {
         address indexed maker,
         Constraints newConstraints
     );
+    event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
 
     /*//////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -155,7 +156,12 @@ contract Orderbook is ReentrancyGuard {
             _requestedToken
         );
 
-        _createOffer(offerId, _offer, _requestedToken, _constraints);
+        _createOfferAndUpdateStatus(
+            offerId,
+            _offer,
+            _requestedToken,
+            _constraints
+        );
 
         IERC20(_offer.token).safeTransferFrom(
             msg.sender,
@@ -196,7 +202,12 @@ contract Orderbook is ReentrancyGuard {
 
         offerId = _generateOrderId(ETH_ADDRESS, _offer.amount, _requestedToken);
 
-        _createOffer(offerId, _offer, _requestedToken, _constraints);
+        _createOfferAndUpdateStatus(
+            offerId,
+            _offer,
+            _requestedToken,
+            _constraints
+        );
 
         // Transfer ETH to escrow
         (bool success, ) = address(escrow).call{value: _offer.amount}("");
@@ -318,7 +329,7 @@ contract Orderbook is ReentrancyGuard {
             );
     }
 
-    function _createOffer(
+    function _createOfferAndUpdateStatus(
         bytes32 _offerId,
         TokenAmount memory _offer,
         address _requestedToken,
@@ -334,6 +345,8 @@ contract Orderbook is ReentrancyGuard {
 
         offerStatusById[_offerId] = OfferStatus.Open;
         nonce++;
+
+        emit OfferStatusUpdated(_offerId, OfferStatus.Open);
     }
 
     function _getOffer(

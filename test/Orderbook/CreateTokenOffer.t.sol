@@ -41,6 +41,11 @@ contract CreateTokenOfferTest is TestSetup {
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
+        emit Orderbook.OfferStatusUpdated(
+            expectedOfferId,
+            Orderbook.OfferStatus.Open
+        );
+        vm.expectEmit(true, true, true, true);
         emit Orderbook.OfferCreated(
             expectedOfferId,
             maker,

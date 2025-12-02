@@ -27,7 +27,7 @@ contract CreateEthOfferTest is TestSetup {
                 validUntil
             );
 
-        bytes32 expectedOrderId = keccak256(
+        bytes32 expectedOfferId = keccak256(
             abi.encode(
                 maker,
                 orderbook.nonce(),
@@ -40,8 +40,13 @@ contract CreateEthOfferTest is TestSetup {
         vm.startPrank(maker);
 
         vm.expectEmit(true, true, true, true);
+        emit Orderbook.OfferStatusUpdated(
+            expectedOfferId,
+            Orderbook.OfferStatus.Open
+        );
+        vm.expectEmit(true, true, true, true);
         emit Orderbook.OfferCreated(
-            expectedOrderId,
+            expectedOfferId,
             maker,
             offer,
             address(requestedToken),
