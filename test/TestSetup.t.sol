@@ -47,6 +47,8 @@ contract TestSetup is Test {
         orderbook = new Orderbook(address(settlementEngine), address(escrow));
 
         escrow.setOrderbook(address(orderbook));
+
+        orderbook.addToken(address(offeredToken));
         vm.stopPrank();
 
         deal(maker, INITIAL_MAKER_BALANCE);

@@ -8,6 +8,10 @@ import {
 import {
     ReentrancyGuard
 } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    Ownable2Step,
+    Ownable
+} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import {Escrow} from "./Escrow.sol";
 
@@ -15,7 +19,7 @@ import {Escrow} from "./Escrow.sol";
 /// @dev Execution logic lives in dedicated settlement/escrow contracts;
 ///      this contract focuses on the canonical order schema, identifiers and status tracking so that other modules can integrate without duplicating definitions.
 
-contract Orderbook is ReentrancyGuard {
+contract Orderbook is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -53,6 +57,7 @@ contract Orderbook is ReentrancyGuard {
         uint256 newConstraints
     );
     event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
+    event TokenAdded(address indexed token);
 
     /*//////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -107,10 +112,12 @@ contract Orderbook is ReentrancyGuard {
         uint256 remainingAmount; // Fill and timing controls
     }
 
-    /// @notice Tracks the current status of an offer hash to prevent replays.
+    /// @notice Offer Tracking.
     mapping(bytes32 offerId => OfferStatus status) public offerStatusById;
-
     mapping(bytes32 offerId => Offer offer) public offers;
+
+    /// @notice token tracking
+    mapping(address token => bool isSupported) public supportedTokens;
 
     uint256 public nonce;
 
@@ -124,13 +131,28 @@ contract Orderbook is ReentrancyGuard {
     constructor(
         address _settlementEngine,
         address _escrow
-    ) checkZeroAddress(_settlementEngine) checkZeroAddress(_escrow) {
+    )
+        Ownable(msg.sender)
+        checkZeroAddress(_settlementEngine)
+        checkZeroAddress(_escrow)
+    {
         settlementEngine = _settlementEngine;
         escrow = Escrow(payable(_escrow));
         nonce = 1;
 
         emit SettlementEngineSet(settlementEngine);
         emit EscrowSet(address(escrow));
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            ADMIN FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function addToken(
+        address _token
+    ) external onlyOwner checkZeroAddress(_token) {
+        supportedTokens[_token] = true;
+        emit TokenAdded(_token);
     }
 
     /*//////////////////////////////////////////////////////////////
