@@ -28,10 +28,38 @@ contract AdminPrivilegesTest is TestSetup {
         );
 
         vm.startPrank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit Orderbook.TokenAdded(address(newToken));
         orderbook.addToken(address(newToken));
         vm.stopPrank();
 
         isSupported = orderbook.supportedTokens(address(newToken));
         assertTrue(isSupported, "Token should be supported after being added");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                              REMOVE TOKEN
+    //////////////////////////////////////////////////////////////*/
+
+    function test_RemoveToken() public {
+        // First, add the token to ensure it is supported
+        vm.startPrank(owner);
+        orderbook.addToken(address(newToken));
+        vm.stopPrank();
+
+        bool isSupported = orderbook.supportedTokens(address(newToken));
+        assertTrue(isSupported, "Token should be supported after being added");
+
+        vm.startPrank(owner);
+        vm.expectEmit(true, false, false, false);
+        emit Orderbook.TokenRemoved(address(newToken));
+        orderbook.removeToken(address(newToken));
+        vm.stopPrank();
+
+        isSupported = orderbook.supportedTokens(address(newToken));
+        assertFalse(
+            isSupported,
+            "Token should not be supported after being removed"
+        );
     }
 }

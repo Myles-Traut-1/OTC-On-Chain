@@ -66,6 +66,8 @@ contract CreateEthOfferTest is TestSetup {
                             NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
 
+    function test_CreateEthOfferRevertsForUnsupportedToken() public {}
+
     function test_CreateEthOffer_Reverts_ZeroAddress() public {
         (
             Orderbook.TokenAmount memory offer,

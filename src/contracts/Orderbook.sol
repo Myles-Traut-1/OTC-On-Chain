@@ -59,6 +59,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     );
     event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
     event TokenAdded(address indexed token);
+    event TokenRemoved(address indexed token);
 
     /*//////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -159,6 +160,14 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     ) external onlyOwner checkZeroAddress(_token) {
         supportedTokens[_token] = true;
         emit TokenAdded(_token);
+    }
+
+    function removeToken(address _token) external onlyOwner {
+        if (!supportedTokens[_token]) {
+            revert Orderbook__UnsupportedToken(_token);
+        }
+        supportedTokens[_token] = false;
+        emit TokenRemoved(_token);
     }
 
     /*//////////////////////////////////////////////////////////////
