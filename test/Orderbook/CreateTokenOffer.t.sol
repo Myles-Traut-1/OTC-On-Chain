@@ -157,7 +157,7 @@ contract CreateTokenOfferTest is TestSetup {
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidTokenAmount.selector);
+        vm.expectRevert(Orderbook.Orderbook__InvalidOfferAmount.selector);
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
     }

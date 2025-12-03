@@ -29,7 +29,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     error Orderbook__OfferAlreadyExists(bytes32 orderId);
     error Orderbook__ZeroAddress();
     error Orderbook__InsufficientBalance();
-    error Orderbook__InvalidTokenAmount();
+    error Orderbook__InvalidOfferAmount();
     error Orderbook__InvalidConstraints(string reason);
     error Orderbook__NotETH();
     error Orderbook__ETHTransferFailed();
@@ -69,8 +69,8 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         _;
     }
 
-    modifier validateTokenAmounts(TokenAmount memory _offer) {
-        _validateTokenAmounts(_offer);
+    modifier validateTokenAmounts(uint256 _offerAmount) {
+        _validateTokenAmounts(_offerAmount);
         _;
     }
 
@@ -173,7 +173,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         external
         onlySupportedToken(_offer.token)
         onlySupportedToken(_requestedToken)
-        validateTokenAmounts(_offer)
+        validateTokenAmounts(_offer.amount)
         nonReentrant
         returns (bytes32 offerId)
     {
@@ -216,12 +216,12 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         payable
         onlySupportedToken(_offer.token)
         onlySupportedToken(_requestedToken)
-        validateTokenAmounts(_offer)
+        validateTokenAmounts(_offer.amount)
         nonReentrant
         returns (bytes32 offerId)
     {
         if (msg.value != _offer.amount) {
-            revert Orderbook__InvalidTokenAmount();
+            revert Orderbook__InvalidOfferAmount();
         }
 
         if (_offer.token != ETH_ADDRESS) {
@@ -322,9 +322,9 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         }
     }
 
-    function _validateTokenAmounts(TokenAmount memory _offer) internal pure {
-        if (_offer.amount < MIN_OFFER_AMOUNT) {
-            revert Orderbook__InvalidTokenAmount();
+    function _validateTokenAmounts(uint256 _offerAmount) internal pure {
+        if (_offerAmount < MIN_OFFER_AMOUNT) {
+            revert Orderbook__InvalidOfferAmount();
         }
     }
 

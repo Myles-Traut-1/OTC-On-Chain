@@ -175,7 +175,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidTokenAmount.selector);
+        vm.expectRevert(Orderbook.Orderbook__InvalidOfferAmount.selector);
         orderbook.createEthOffer{value: 0}(
             offer,
             address(requestedToken),
