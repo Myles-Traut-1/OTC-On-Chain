@@ -102,6 +102,68 @@ contract CreateTokenOfferTest is TestSetup {
                             NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
 
+    function test_CreateTokenOfferRevertsForUnsupportedRequestedToken() public {
+        vm.startPrank(owner);
+        orderbook.removeToken(address(requestedToken));
+        vm.stopPrank();
+
+        assertFalse(orderbook.supportedTokens(address(requestedToken)));
+
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                address(requestedToken)
+            )
+        );
+        orderbook.createEthOffer{value: OFFER_AMOUNT}(
+            offer,
+            address(requestedToken),
+            constraints
+        );
+        vm.stopPrank();
+    }
+
+    function test_CreateTokenOfferRevertsForUnsupportedOfferedToken() public {
+        vm.startPrank(owner);
+        orderbook.removeToken(address(offeredToken));
+        vm.stopPrank();
+
+        assertFalse(orderbook.supportedTokens(address(offeredToken)));
+
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                address(offeredToken)
+            )
+        );
+        orderbook.createTokenOffer(offer, address(requestedToken), constraints);
+        vm.stopPrank();
+    }
+
     function test_CreateTokenOffer_Reverts_ZeroAddress() public {
         (
             Orderbook.TokenAmount memory offer,

@@ -66,7 +66,71 @@ contract CreateEthOfferTest is TestSetup {
                             NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_CreateEthOfferRevertsForUnsupportedToken() public {}
+    function test_CreateEthOfferRevertsForUnsupportedRequestedToken() public {
+        vm.startPrank(owner);
+        orderbook.removeToken(address(requestedToken));
+        vm.stopPrank();
+
+        assertFalse(orderbook.supportedTokens(address(requestedToken)));
+
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                orderbook.ETH_ADDRESS(),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                address(requestedToken)
+            )
+        );
+        orderbook.createEthOffer{value: OFFER_AMOUNT}(
+            offer,
+            address(requestedToken),
+            constraints
+        );
+        vm.stopPrank();
+    }
+
+    function test_CreateEthOfferRevertsForUnsupportedOfferedToken() public {
+        vm.startPrank(owner);
+        orderbook.removeToken(orderbook.ETH_ADDRESS());
+        vm.stopPrank();
+
+        assertFalse(orderbook.supportedTokens(orderbook.ETH_ADDRESS()));
+
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                orderbook.ETH_ADDRESS(),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                orderbook.ETH_ADDRESS()
+            )
+        );
+        orderbook.createEthOffer{value: OFFER_AMOUNT}(
+            offer,
+            address(requestedToken),
+            constraints
+        );
+        vm.stopPrank();
+    }
 
     function test_CreateEthOffer_Reverts_ZeroAddress() public {
         (
