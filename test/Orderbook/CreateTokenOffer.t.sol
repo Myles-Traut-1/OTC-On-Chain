@@ -117,7 +117,12 @@ contract CreateTokenOfferTest is TestSetup {
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
-        vm.expectRevert(Orderbook.Orderbook__ZeroAddress.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                address(0)
+            )
+        );
         orderbook.createTokenOffer(offer, address(0), constraints);
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
@@ -128,7 +133,12 @@ contract CreateTokenOfferTest is TestSetup {
             validUntil
         );
 
-        vm.expectRevert(Orderbook.Orderbook__ZeroAddress.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                address(0)
+            )
+        );
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
     }
 

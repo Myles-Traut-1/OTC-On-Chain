@@ -36,6 +36,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     error Orderbook__NotOfferCreator();
     error Orderbook__OfferNotOpen();
     error Orderbook__InvalidOfferId();
+    error Orderbook__UnsupportedToken(address token);
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
@@ -70,6 +71,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
     modifier validateTokenAmounts(TokenAmount memory _offer) {
         _validateTokenAmounts(_offer);
+        _;
+    }
+
+    modifier onlySupportedToken(address _token) {
+        _onlySupportedToken(_token);
         _;
     }
 
@@ -165,7 +171,8 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         uint256 _constraints
     )
         external
-        checkZeroAddress(_requestedToken)
+        onlySupportedToken(_offer.token)
+        onlySupportedToken(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
         returns (bytes32 offerId)
@@ -207,7 +214,8 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     )
         external
         payable
-        checkZeroAddress(_requestedToken)
+        onlySupportedToken(_offer.token)
+        onlySupportedToken(_requestedToken)
         validateTokenAmounts(_offer)
         nonReentrant
         returns (bytes32 offerId)
@@ -318,8 +326,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         if (_offer.amount < MIN_OFFER_AMOUNT) {
             revert Orderbook__InvalidTokenAmount();
         }
-        if (_offer.token == address(0)) {
-            revert Orderbook__ZeroAddress();
+    }
+
+    function _onlySupportedToken(address _token) internal view {
+        if (!supportedTokens[_token]) {
+            revert Orderbook__UnsupportedToken(_token);
         }
     }
 

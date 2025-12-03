@@ -49,6 +49,8 @@ contract TestSetup is Test {
         escrow.setOrderbook(address(orderbook));
 
         orderbook.addToken(address(offeredToken));
+        orderbook.addToken(address(requestedToken));
+        orderbook.addToken(orderbook.ETH_ADDRESS());
         vm.stopPrank();
 
         deal(maker, INITIAL_MAKER_BALANCE);

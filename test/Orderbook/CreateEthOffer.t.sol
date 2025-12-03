@@ -80,7 +80,12 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__ZeroAddress.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__UnsupportedToken.selector,
+                address(0)
+            )
+        );
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
             address(0),
@@ -135,6 +140,8 @@ contract CreateEthOfferTest is TestSetup {
             address(settlementEngine),
             mockEscrow
         );
+        newOrderbook.addToken(address(requestedToken));
+        newOrderbook.addToken(newOrderbook.ETH_ADDRESS());
         vm.stopPrank();
 
         // Assert escrow address
