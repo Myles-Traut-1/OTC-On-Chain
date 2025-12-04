@@ -20,6 +20,7 @@ contract Escrow is Ownable2Step {
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
+    error Escrow__AddressZero();
     error Escrow__EthTransferFailed();
     error Escrow__Unauthorized();
 
@@ -38,6 +39,13 @@ contract Escrow is Ownable2Step {
                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
+    modifier checkZeroAddress(address _addr) {
+        if (_addr == address(0)) {
+            revert Escrow__AddressZero();
+        }
+        _;
+    }
+
     modifier onlyOrderbook() {
         if (msg.sender != address(orderbook)) {
             revert Escrow__Unauthorized();
@@ -51,6 +59,8 @@ contract Escrow is Ownable2Step {
 
     Orderbook public orderbook;
 
+    mapping(address token => uint256 balance) private tokenBalances; // Internal accounting to prevent donation attacks
+
     receive() external payable {}
 
     /*//////////////////////////////////////////////////////////////
@@ -63,7 +73,9 @@ contract Escrow is Ownable2Step {
                             ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function setOrderbook(address _orderbook) external onlyOwner {
+    function setOrderbook(
+        address _orderbook
+    ) external onlyOwner checkZeroAddress(_orderbook) {
         orderbook = Orderbook(_orderbook);
 
         emit OrderbookSet(_orderbook);
@@ -73,11 +85,20 @@ contract Escrow is Ownable2Step {
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    function increaseBalance(
+        address _token,
+        uint256 _amount
+    ) external onlyOrderbook {
+        _increaseBalance(_token, _amount);
+    }
+
     function transferFunds(
         address _token,
         address _to,
         uint256 _amount
     ) external onlyOrderbook {
+        _decreaseBalance(_token, _amount);
+
         if (_token == orderbook.ETH_ADDRESS()) {
             (bool success, ) = _to.call{value: _amount}("");
             if (!success) {
@@ -88,5 +109,17 @@ contract Escrow is Ownable2Step {
         }
 
         emit FundsTransferred(_token, _to, _amount);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           PRIVATE FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _increaseBalance(address _token, uint256 _amount) internal {
+        tokenBalances[_token] += _amount;
+    }
+
+    function _decreaseBalance(address _token, uint256 _amount) private {
+        tokenBalances[_token] -= _amount;
     }
 }

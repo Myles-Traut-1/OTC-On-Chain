@@ -345,7 +345,12 @@ contract CreateEthOfferTest is TestSetup {
 }
 
 contract MockEscrow {
+    mapping(address => uint256) private tokenBalances;
+
     receive() external payable {
         revert("MockEscrow: ETH transfer failed");
+    }
+    function increaseBalance(address _token, uint256 _amount) external {
+        tokenBalances[_token] += _amount;
     }
 }

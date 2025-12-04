@@ -197,11 +197,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             _constraints
         );
 
-        IERC20(_offer.token).safeTransferFrom(
-            msg.sender,
-            address(escrow),
-            _offer.amount
-        );
+        _transferToEscrow(_offer.token, _offer.amount);
 
         emit OfferCreated(
             offerId,
@@ -240,12 +236,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             _constraints
         );
 
-        // Transfer ETH to escrow
-        (bool success, ) = address(escrow).call{value: _offer.amount}("");
-
-        if (!success) {
-            revert Orderbook__ETHTransferFailed();
-        }
+        _transferToEscrow(ETH_ADDRESS, _offer.amount);
 
         emit OfferCreated(
             offerId,
@@ -468,5 +459,24 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         validFrom = uint64(_encodedConstraints & 0xFFFFFFFFFFFFFFFF); // Mask for the lower 64 bits
         validUntil = uint64(_encodedConstraints >> 64);
         maxSlippageBps = uint128(_encodedConstraints >> 128);
+    }
+
+    function _transferToEscrow(address _token, uint256 _amount) private {
+        if (_token == ETH_ADDRESS) {
+            escrow.increaseBalance(ETH_ADDRESS, _amount);
+
+            (bool success, ) = address(escrow).call{value: _amount}("");
+
+            if (!success) {
+                revert Orderbook__ETHTransferFailed();
+            }
+        } else {
+            escrow.increaseBalance(_token, _amount);
+            IERC20(_token).safeTransferFrom(
+                msg.sender,
+                address(escrow),
+                _amount
+            );
+        }
     }
 }
