@@ -124,7 +124,7 @@ contract Escrow is Ownable2Step {
         tokenBalances[_token] += _amount;
     }
 
-    function _decreaseBalance(address _token, uint256 _amount) private {
+    function _decreaseBalance(address _token, uint256 _amount) internal {
         tokenBalances[_token] -= _amount;
     }
 }

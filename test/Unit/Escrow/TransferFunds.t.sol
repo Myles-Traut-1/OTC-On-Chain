@@ -7,7 +7,8 @@ import {Escrow} from "../../../src/contracts/Escrow.sol";
 import {console} from "forge-std/console.sol";
 
 contract TransferFundsTest is TestSetup {
-    address recipient = makeAddr("recipient");
+    address public recipient = makeAddr("recipient");
+    address public noEthReceiver;
 
     function setUp() public override {
         super.setUp();
@@ -74,5 +75,22 @@ contract TransferFundsTest is TestSetup {
             abi.encodeWithSelector(Escrow.Escrow__Unauthorized.selector)
         );
         escrow.transferFunds(ETH, recipient, OFFER_AMOUNT);
+    }
+
+    function test_TransferFunds_FailsToSendEth() public {
+        // Deploy a contract that cannot receive ETH
+        address noEthReceiver = address(new NoEthReceiver());
+
+        vm.prank(address(orderbook));
+        vm.expectRevert(
+            abi.encodeWithSelector(Escrow.Escrow__EthTransferFailed.selector)
+        );
+        escrow.transferFunds(ETH, noEthReceiver, OFFER_AMOUNT);
+    }
+}
+
+contract NoEthReceiver {
+    receive() external payable {
+        revert("Cannot receive ETH");
     }
 }
