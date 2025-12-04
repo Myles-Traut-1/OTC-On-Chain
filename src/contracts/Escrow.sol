@@ -59,8 +59,9 @@ contract Escrow is Ownable2Step {
 
     Orderbook public orderbook;
 
-    mapping(address token => uint256 balance) private tokenBalances; // Internal accounting to prevent donation attacks
-
+    /// @dev receive is here to be able to receive ETH.
+    /// @notice mapping used for internal accounting to prevent donation attacks.
+    mapping(address token => uint256 balance) private tokenBalances;
     receive() external payable {}
 
     /*//////////////////////////////////////////////////////////////
@@ -109,6 +110,10 @@ contract Escrow is Ownable2Step {
         }
 
         emit FundsTransferred(_token, _to, _amount);
+    }
+
+    function getTokenBalance(address _token) external view returns (uint256) {
+        return tokenBalances[_token];
     }
 
     /*//////////////////////////////////////////////////////////////
