@@ -93,7 +93,9 @@ contract CreateEthOfferTest is TestSetup {
         orderbook.removeToken(address(requestedToken));
         vm.stopPrank();
 
-        assertFalse(orderbook.supportedTokens(address(requestedToken)));
+        (, bool isSupported) = orderbook.tokenInfo(address(requestedToken));
+
+        assertFalse(isSupported);
 
         (
             Orderbook.TokenAmount memory offer,
@@ -126,7 +128,7 @@ contract CreateEthOfferTest is TestSetup {
         orderbook.removeToken(ETH);
         vm.stopPrank();
 
-        assertFalse(orderbook.supportedTokens(ETH));
+        (, bool isSupported) = orderbook.tokenInfo(ETH);
 
         (
             Orderbook.TokenAmount memory offer,
@@ -228,8 +230,11 @@ contract CreateEthOfferTest is TestSetup {
             address(settlementEngine),
             mockEscrow
         );
-        newOrderbook.addToken(address(requestedToken));
-        newOrderbook.addToken(newOrderbook.ETH_ADDRESS());
+        newOrderbook.addToken(
+            address(requestedToken),
+            address(requestedTokenEthFeed)
+        );
+        newOrderbook.addToken(newOrderbook.ETH_ADDRESS(), address(0));
         vm.stopPrank();
 
         // Assert escrow address

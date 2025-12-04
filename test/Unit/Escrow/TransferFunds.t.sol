@@ -79,7 +79,7 @@ contract TransferFundsTest is TestSetup {
 
     function test_TransferFunds_FailsToSendEth() public {
         // Deploy a contract that cannot receive ETH
-        address noEthReceiver = address(new NoEthReceiver());
+        noEthReceiver = address(new NoEthReceiver());
 
         vm.prank(address(orderbook));
         vm.expectRevert(

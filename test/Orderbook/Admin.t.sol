@@ -23,20 +23,35 @@ contract AdminPrivilegesTest is TestSetup {
     //////////////////////////////////////////////////////////////*/
 
     function test_AddToken() public {
-        bool isSupported = orderbook.supportedTokens(address(newToken));
+        (address priceFeed, bool isSupported) = orderbook.tokenInfo(
+            address(newToken)
+        );
         assertFalse(
             isSupported,
             "Token should not be supported before being added"
         );
+        assertEq(
+            priceFeed,
+            address(0),
+            "Data feed should be address zero before being added"
+        );
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, false);
-        emit Orderbook.TokenAdded(address(newToken));
-        orderbook.addToken(address(newToken));
+        emit Orderbook.TokenAdded(
+            address(newToken),
+            address(offeredTokenEthFeed)
+        );
+        orderbook.addToken(address(newToken), address(offeredTokenEthFeed));
         vm.stopPrank();
 
-        isSupported = orderbook.supportedTokens(address(newToken));
+        (priceFeed, isSupported) = orderbook.tokenInfo(address(newToken));
         assertTrue(isSupported, "Token should be supported after being added");
+        assertEq(
+            priceFeed,
+            address(offeredTokenEthFeed),
+            "Data feed should be set correctly after being added"
+        );
     }
 
     /******* NEGATIVE TESTS ********/
@@ -49,7 +64,7 @@ contract AdminPrivilegesTest is TestSetup {
                 maker
             )
         );
-        orderbook.addToken(address(newToken));
+        orderbook.addToken(address(newToken), address(offeredTokenEthFeed));
     }
 
     function test_AddToken_RevertsOnZeroAddress() public {
@@ -57,7 +72,12 @@ contract AdminPrivilegesTest is TestSetup {
         vm.expectRevert(
             abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
         );
-        orderbook.addToken(address(0));
+        orderbook.addToken(address(0), address(offeredTokenEthFeed));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
+        );
+        orderbook.addToken(address(newToken), address(0));
         vm.stopPrank();
     }
 
@@ -68,10 +88,12 @@ contract AdminPrivilegesTest is TestSetup {
     function test_RemoveToken() public {
         // First, add the token to ensure it is supported
         vm.startPrank(owner);
-        orderbook.addToken(address(newToken));
+        orderbook.addToken(address(newToken), address(offeredTokenEthFeed));
         vm.stopPrank();
 
-        bool isSupported = orderbook.supportedTokens(address(newToken));
+        (address priceFeed, bool isSupported) = orderbook.tokenInfo(
+            address(newToken)
+        );
         assertTrue(isSupported, "Token should be supported after being added");
 
         vm.startPrank(owner);
@@ -80,7 +102,7 @@ contract AdminPrivilegesTest is TestSetup {
         orderbook.removeToken(address(newToken));
         vm.stopPrank();
 
-        isSupported = orderbook.supportedTokens(address(newToken));
+        (, isSupported) = orderbook.tokenInfo(address(newToken));
         assertFalse(
             isSupported,
             "Token should not be supported after being removed"

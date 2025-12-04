@@ -8,7 +8,12 @@ import {SettlementEngine} from "../src/contracts/SettlementEngine.sol";
 
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
+import {MockV3Aggregator} from "@chainlink/src/v0.8/tests/MockV3Aggregator.sol";
+
 contract TestSetup is Test {
+    MockV3Aggregator offeredTokenEthFeed;
+    MockV3Aggregator requestedTokenEthFeed;
+
     Orderbook public orderbook;
     Escrow public escrow;
     SettlementEngine public settlementEngine;
@@ -38,6 +43,9 @@ contract TestSetup is Test {
         taker1 = makeAddr("taker1");
         taker2 = makeAddr("taker2");
 
+        offeredTokenEthFeed = new MockV3Aggregator(8, 2000e18); // $2000 per ETH
+        requestedTokenEthFeed = new MockV3Aggregator(8, 1000e18); // $1000 per ETH
+
         offeredToken = new ERC20Mock();
         requestedToken = new ERC20Mock();
 
@@ -50,9 +58,12 @@ contract TestSetup is Test {
 
         escrow.setOrderbook(address(orderbook));
 
-        orderbook.addToken(address(offeredToken));
-        orderbook.addToken(address(requestedToken));
-        orderbook.addToken(orderbook.ETH_ADDRESS());
+        orderbook.addToken(address(offeredToken), address(offeredTokenEthFeed));
+        orderbook.addToken(
+            address(requestedToken),
+            address(requestedTokenEthFeed)
+        );
+        orderbook.addToken(orderbook.ETH_ADDRESS(), address(0)); // ETH has no data feed
         vm.stopPrank();
 
         deal(maker, INITIAL_MAKER_BALANCE);

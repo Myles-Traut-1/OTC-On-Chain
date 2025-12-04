@@ -59,7 +59,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         uint256 newConstraints
     );
     event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
-    event TokenAdded(address indexed token);
+    event TokenAdded(address indexed token, address indexed dataFeed);
     event TokenRemoved(address indexed token);
 
     /*//////////////////////////////////////////////////////////////
@@ -102,6 +102,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         Expired
     }
 
+    struct Token {
+        address dataFeed;
+        bool isSupported;
+    }
+
     /// @notice Asset definition with amount semantics.
     struct TokenAmount {
         address token;
@@ -124,7 +129,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     mapping(bytes32 offerId => Offer offer) public offers;
 
     /// @notice token tracking
-    mapping(address token => bool isSupported) public supportedTokens;
+    mapping(address token => Token) public tokenInfo;
 
     uint256 public nonce;
 
@@ -156,17 +161,27 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     //////////////////////////////////////////////////////////////*/
 
     function addToken(
-        address _token
+        address _token,
+        address _dataFeed
     ) external onlyOwner checkZeroAddress(_token) {
-        supportedTokens[_token] = true;
-        emit TokenAdded(_token);
+        if (_token == ETH_ADDRESS) {
+            tokenInfo[_token] = Token({
+                dataFeed: address(0),
+                isSupported: true
+            });
+        } else {
+            _checkZeroAddress(_dataFeed);
+        }
+
+        tokenInfo[_token] = Token({dataFeed: _dataFeed, isSupported: true});
+        emit TokenAdded(_token, _dataFeed);
     }
 
     function removeToken(address _token) external onlyOwner {
-        if (!supportedTokens[_token]) {
+        if (!tokenInfo[_token].isSupported) {
             revert Orderbook__UnsupportedToken(_token);
         }
-        supportedTokens[_token] = false;
+        tokenInfo[_token].isSupported = false;
         emit TokenRemoved(_token);
     }
 
@@ -322,11 +337,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         address _offeredToken = _offer.token;
         uint256 _offerAmount = _offer.amount;
 
-        if (!supportedTokens[_offeredToken]) {
+        if (!tokenInfo[_offeredToken].isSupported) {
             revert Orderbook__UnsupportedToken(_offeredToken);
         }
 
-        if (!supportedTokens[_requestedToken]) {
+        if (!tokenInfo[_requestedToken].isSupported) {
             revert Orderbook__UnsupportedToken(_requestedToken);
         }
 

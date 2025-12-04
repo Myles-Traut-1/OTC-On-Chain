@@ -129,7 +129,8 @@ contract CreateTokenOfferTest is TestSetup {
         orderbook.removeToken(address(requestedToken));
         vm.stopPrank();
 
-        assertFalse(orderbook.supportedTokens(address(requestedToken)));
+        (, bool isSupported) = orderbook.tokenInfo(address(requestedToken));
+        assertFalse(isSupported);
 
         (
             Orderbook.TokenAmount memory offer,
@@ -162,7 +163,8 @@ contract CreateTokenOfferTest is TestSetup {
         orderbook.removeToken(address(offeredToken));
         vm.stopPrank();
 
-        assertFalse(orderbook.supportedTokens(address(offeredToken)));
+        (, bool isSupported) = orderbook.tokenInfo(address(offeredToken));
+        assertFalse(isSupported);
 
         (
             Orderbook.TokenAmount memory offer,
