@@ -66,6 +66,28 @@ contract CreateEthOfferTest is TestSetup {
                             NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
 
+    function test_CreateEthOffer_RevertsSameTokens() public {
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                orderbook.ETH_ADDRESS(),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        address ETH = orderbook.ETH_ADDRESS();
+
+        vm.startPrank(maker);
+
+        vm.expectRevert(Orderbook.Orderbook__SameTokens.selector);
+        orderbook.createEthOffer{value: OFFER_AMOUNT}(offer, ETH, constraints);
+
+        vm.stopPrank();
+    }
+
     function test_CreateEthOfferRevertsForUnsupportedRequestedToken() public {
         vm.startPrank(owner);
         orderbook.removeToken(address(requestedToken));

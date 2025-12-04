@@ -37,6 +37,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     error Orderbook__OfferNotOpen();
     error Orderbook__InvalidOfferId();
     error Orderbook__UnsupportedToken(address token);
+    error Orderbook__SameTokens();
 
     /*//////////////////////////////////////////////////////////////
                                 EVENTS
@@ -70,13 +71,12 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         _;
     }
 
-    modifier validateTokenAmounts(uint256 _offerAmount) {
-        _validateTokenAmounts(_offerAmount);
-        _;
-    }
-
-    modifier onlySupportedToken(address _token) {
-        _onlySupportedToken(_token);
+    modifier validateOffer(
+        TokenAmount memory _offer,
+        address _requestedToken,
+        uint256 _constraints
+    ) {
+        _validateOffer(_offer, _requestedToken, _constraints);
         _;
     }
 
@@ -180,14 +180,10 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         uint256 _constraints
     )
         external
-        onlySupportedToken(_offer.token)
-        onlySupportedToken(_requestedToken)
-        validateTokenAmounts(_offer.amount)
+        validateOffer(_offer, _requestedToken, _constraints)
         nonReentrant
         returns (bytes32 offerId)
     {
-        _validateConstraints(_constraints);
-
         offerId = _generateOrderId(
             _offer.token,
             _offer.amount,
@@ -223,9 +219,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     )
         external
         payable
-        onlySupportedToken(_offer.token)
-        onlySupportedToken(_requestedToken)
-        validateTokenAmounts(_offer.amount)
+        validateOffer(_offer, _requestedToken, _constraints)
         nonReentrant
         returns (bytes32 offerId)
     {
@@ -236,8 +230,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         if (_offer.token != ETH_ADDRESS) {
             revert Orderbook__NotETH();
         }
-
-        _validateConstraints(_constraints);
 
         offerId = _generateOrderId(ETH_ADDRESS, _offer.amount, _requestedToken);
 
@@ -331,16 +323,31 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         }
     }
 
-    function _validateTokenAmounts(uint256 _offerAmount) internal pure {
+    function _validateOffer(
+        TokenAmount memory _offer,
+        address _requestedToken,
+        uint256 _constraints
+    ) internal view {
+        address _offeredToken = _offer.token;
+        uint256 _offerAmount = _offer.amount;
+
+        if (!supportedTokens[_offeredToken]) {
+            revert Orderbook__UnsupportedToken(_offeredToken);
+        }
+
+        if (!supportedTokens[_requestedToken]) {
+            revert Orderbook__UnsupportedToken(_requestedToken);
+        }
+
+        if (_offeredToken == _requestedToken) {
+            revert Orderbook__SameTokens();
+        }
+
         if (_offerAmount < MIN_OFFER_AMOUNT) {
             revert Orderbook__InvalidOfferAmount();
         }
-    }
 
-    function _onlySupportedToken(address _token) internal view {
-        if (!supportedTokens[_token]) {
-            revert Orderbook__UnsupportedToken(_token);
-        }
+        _validateConstraints(_constraints);
     }
 
     function _validateConstraints(uint256 _constraints) internal view {

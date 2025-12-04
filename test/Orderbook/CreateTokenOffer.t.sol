@@ -102,6 +102,28 @@ contract CreateTokenOfferTest is TestSetup {
                             NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
 
+    function test_CreateTokenOffer_RevertsSameTokens() public {
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+        offeredToken.approve(address(orderbook), OFFER_AMOUNT);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Orderbook.Orderbook__SameTokens.selector)
+        );
+        orderbook.createTokenOffer(offer, address(offeredToken), constraints);
+        vm.stopPrank();
+    }
+
     function test_CreateTokenOfferRevertsForUnsupportedRequestedToken() public {
         vm.startPrank(owner);
         orderbook.removeToken(address(requestedToken));
