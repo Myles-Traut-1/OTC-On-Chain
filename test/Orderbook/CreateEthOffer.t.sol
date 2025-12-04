@@ -20,7 +20,7 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
@@ -31,7 +31,7 @@ contract CreateEthOfferTest is TestSetup {
             abi.encode(
                 maker,
                 orderbook.nonce(),
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 address(requestedToken)
             )
@@ -71,14 +71,14 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
                 validUntil
             );
 
-        address ETH = orderbook.ETH_ADDRESS();
+        address ETH = ETH;
 
         vm.startPrank(maker);
 
@@ -99,7 +99,7 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
@@ -123,16 +123,16 @@ contract CreateEthOfferTest is TestSetup {
 
     function test_CreateEthOfferRevertsForUnsupportedOfferedToken() public {
         vm.startPrank(owner);
-        orderbook.removeToken(orderbook.ETH_ADDRESS());
+        orderbook.removeToken(ETH);
         vm.stopPrank();
 
-        assertFalse(orderbook.supportedTokens(orderbook.ETH_ADDRESS()));
+        assertFalse(orderbook.supportedTokens(ETH));
 
         (
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
@@ -143,7 +143,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.expectRevert(
             abi.encodeWithSelector(
                 Orderbook.Orderbook__UnsupportedToken.selector,
-                orderbook.ETH_ADDRESS()
+                ETH
             )
         );
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
@@ -159,7 +159,7 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
@@ -213,7 +213,7 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
@@ -254,7 +254,7 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 orderbook.MIN_OFFER_AMOUNT() - 1,
                 MAX_SLIPPAGE_BPS,
                 validFrom,
@@ -280,7 +280,7 @@ contract CreateEthOfferTest is TestSetup {
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
-                orderbook.ETH_ADDRESS(),
+                ETH,
                 OFFER_AMOUNT,
                 0,
                 validFrom,
@@ -301,7 +301,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
-            orderbook.ETH_ADDRESS(),
+            ETH,
             OFFER_AMOUNT,
             MAX_SLIPPAGE_BPS,
             block.timestamp - 1,
@@ -322,7 +322,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
-            orderbook.ETH_ADDRESS(),
+            ETH,
             OFFER_AMOUNT,
             MAX_SLIPPAGE_BPS,
             validFrom,

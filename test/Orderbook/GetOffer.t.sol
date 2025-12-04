@@ -33,14 +33,14 @@ contract Orderbook_GetOffer is TestSetup {
         assertEq(validUntil, uint64(validUntil));
 
         bytes32 etherOfferId = _createAndReturnOffer(
-            address(orderbook.ETH_ADDRESS()),
+            address(ETH),
             address(requestedToken)
         );
 
         (offer, status) = orderbook.getOffer(etherOfferId);
 
         assertEq(offer.maker, maker);
-        assertEq(offer.offer.token, address(orderbook.ETH_ADDRESS()));
+        assertEq(offer.offer.token, address(ETH));
         assertEq(offer.offer.amount, OFFER_AMOUNT);
         assertEq(offer.requestedToken, address(requestedToken));
         assert(status == Orderbook.OfferStatus.Open);

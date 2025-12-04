@@ -53,7 +53,7 @@ contract CancelOfferTest is TestSetup {
     }
 
     function test_CancelOfferWithEth_Success() public {
-        (bytes32 offerId) = _createOffer(orderbook.ETH_ADDRESS());
+        (bytes32 offerId) = _createOffer(ETH);
 
         vm.startPrank(maker);
 
@@ -103,7 +103,7 @@ contract CancelOfferTest is TestSetup {
     }
 
     function test_CancelOffer_Reverts_NotOpen() public {
-        (bytes32 offerId) = _createOffer(orderbook.ETH_ADDRESS());
+        (bytes32 offerId) = _createOffer(ETH);
 
         vm.startPrank(maker);
         orderbook.cancelOffer(offerId);
@@ -132,7 +132,7 @@ contract CancelOfferTest is TestSetup {
             );
 
         vm.startPrank(maker);
-        if (_token == orderbook.ETH_ADDRESS()) {
+        if (_token == ETH) {
             deal(maker, INITIAL_MAKER_BALANCE);
             offerId = orderbook.createEthOffer{value: OFFER_AMOUNT}(
                 offer,

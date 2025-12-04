@@ -16,6 +16,8 @@ contract TestSetup is Test {
     ERC20Mock public offeredToken;
     ERC20Mock public requestedToken;
 
+    address public ETH;
+
     address public owner;
     address public maker;
     address public taker1;
@@ -54,6 +56,8 @@ contract TestSetup is Test {
         vm.stopPrank();
 
         deal(maker, INITIAL_MAKER_BALANCE);
+
+        ETH = orderbook.ETH_ADDRESS();
     }
 
     /*//////////////////////////////////////////////////////////////

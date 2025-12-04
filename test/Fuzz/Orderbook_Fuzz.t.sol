@@ -138,7 +138,7 @@ contract OrderbookFuzzTest is TestSetup {
 
         vm.startPrank(maker);
         Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
-            token: address(orderbook.ETH_ADDRESS()),
+            token: address(ETH),
             amount: _offeredAmount
         });
 
@@ -165,7 +165,7 @@ contract OrderbookFuzzTest is TestSetup {
         );
 
         assertEq(offer.maker, maker);
-        assertEq(offer.offer.token, address(orderbook.ETH_ADDRESS()));
+        assertEq(offer.offer.token, address(ETH));
         assertEq(offer.offer.amount, _offeredAmount);
         assertEq(offer.constraints, constraints);
         assertEq(offer.requestedToken, address(requestedToken));
@@ -182,7 +182,7 @@ contract OrderbookFuzzTest is TestSetup {
         );
 
         Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
-            token: address(orderbook.ETH_ADDRESS()),
+            token: address(ETH),
             amount: _offeredAmount
         });
 
@@ -213,7 +213,7 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(maker.balance, INITIAL_MAKER_BALANCE - _offeredAmount);
 
         assertEq(offer.maker, maker);
-        assertEq(offer.offer.token, address(orderbook.ETH_ADDRESS()));
+        assertEq(offer.offer.token, address(ETH));
         assertEq(offer.offer.amount, _offeredAmount);
         assertEq(offer.constraints, constraints);
         assertEq(offer.requestedToken, address(requestedToken));
