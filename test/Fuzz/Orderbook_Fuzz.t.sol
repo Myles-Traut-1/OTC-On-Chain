@@ -3,7 +3,6 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
-import {Escrow} from "../../src/contracts/Escrow.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -257,8 +256,7 @@ contract OrderbookFuzzTest is TestSetup {
             constraints
         );
 
-        (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
-            .getOffer(offerId);
+        (, Orderbook.OfferStatus status) = orderbook.getOffer(offerId);
 
         assertEq(
             offeredToken.balanceOf(address(escrow)),

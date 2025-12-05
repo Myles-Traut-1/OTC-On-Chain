@@ -4,8 +4,6 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Escrow} from "../../../src/contracts/Escrow.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract TransferFundsTest is TestSetup {
     address public recipient = makeAddr("recipient");
     address public noEthReceiver;

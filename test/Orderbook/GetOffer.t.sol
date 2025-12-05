@@ -4,8 +4,6 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract Orderbook_GetOffer is TestSetup {
     function test_GetOfferReturnsOfferAndStatus() public {
         bytes32 offerId = _createAndReturnOffer(

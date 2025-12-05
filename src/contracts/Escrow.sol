@@ -40,16 +40,12 @@ contract Escrow is Ownable2Step {
     //////////////////////////////////////////////////////////////*/
 
     modifier checkZeroAddress(address _addr) {
-        if (_addr == address(0)) {
-            revert Escrow__AddressZero();
-        }
+        _checkZeroAddress(_addr);
         _;
     }
 
     modifier onlyOrderbook() {
-        if (msg.sender != address(orderbook)) {
-            revert Escrow__Unauthorized();
-        }
+        _onlyOrderbook();
         _;
     }
 
@@ -114,6 +110,18 @@ contract Escrow is Ownable2Step {
 
     function getTokenBalance(address _token) external view returns (uint256) {
         return tokenBalances[_token];
+    }
+
+    function _checkZeroAddress(address _addr) internal {
+        if (_addr == address(0)) {
+            revert Escrow__AddressZero();
+        }
+    }
+
+    function _onlyOrderbook() internal {
+        if (msg.sender != address(orderbook)) {
+            revert Escrow__Unauthorized();
+        }
     }
 
     /*//////////////////////////////////////////////////////////////

@@ -78,8 +78,6 @@ contract CreateEthOfferTest is TestSetup {
                 validUntil
             );
 
-        address ETH = ETH;
-
         vm.startPrank(maker);
 
         vm.expectRevert(Orderbook.Orderbook__SameTokens.selector);
@@ -127,8 +125,6 @@ contract CreateEthOfferTest is TestSetup {
         vm.startPrank(owner);
         orderbook.removeToken(ETH);
         vm.stopPrank();
-
-        (, bool isSupported) = orderbook.tokenInfo(ETH);
 
         (
             Orderbook.TokenAmount memory offer,

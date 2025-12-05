@@ -4,8 +4,6 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Escrow} from "../../../src/contracts/Escrow.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract EscrowHarness is Escrow {
     function exposedDecreaseBalance(address _token, uint256 _amount) external {
         _decreaseBalance(_token, _amount);

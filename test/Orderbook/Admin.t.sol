@@ -3,9 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../TestSetup.t.sol";
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
-import {Escrow} from "../../src/contracts/Escrow.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -91,9 +89,7 @@ contract AdminPrivilegesTest is TestSetup {
         orderbook.addToken(address(newToken), address(offeredTokenEthFeed));
         vm.stopPrank();
 
-        (address priceFeed, bool isSupported) = orderbook.tokenInfo(
-            address(newToken)
-        );
+        (, bool isSupported) = orderbook.tokenInfo(address(newToken));
         assertTrue(isSupported, "Token should be supported after being added");
 
         vm.startPrank(owner);
