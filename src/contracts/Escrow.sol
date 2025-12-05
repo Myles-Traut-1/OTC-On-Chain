@@ -108,9 +108,9 @@ contract Escrow is Ownable2Step {
         emit FundsTransferred(_token, _to, _amount);
     }
 
-    function getTokenBalance(address _token) external view returns (uint256) {
-        return tokenBalances[_token];
-    }
+    /*//////////////////////////////////////////////////////////////
+                           INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     function _checkZeroAddress(address _addr) internal {
         if (_addr == address(0)) {
@@ -134,5 +134,13 @@ contract Escrow is Ownable2Step {
 
     function _decreaseBalance(address _token, uint256 _amount) internal {
         tokenBalances[_token] -= _amount;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function getTokenBalance(address _token) external view returns (uint256) {
+        return tokenBalances[_token];
     }
 }

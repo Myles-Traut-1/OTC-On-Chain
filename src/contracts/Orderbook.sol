@@ -421,34 +421,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     }
 
     /*//////////////////////////////////////////////////////////////
-                             VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    function getOffer(
-        bytes32 _offerId
-    ) external view returns (Offer memory offer, OfferStatus status) {
-        return _getOffer(_offerId);
-    }
-
-    function encodeConstraints(
-        uint64 _validFrom,
-        uint64 _validUntil,
-        uint128 _maxSlippageBps
-    ) public view returns (uint256) {
-        return _encodeConstraints(_validFrom, _validUntil, _maxSlippageBps);
-    }
-
-    function decodeConstraints(
-        uint256 _encodedConstraints
-    )
-        public
-        view
-        returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
-    {
-        return _decodeConstraints(_encodedConstraints);
-    }
-
-    /*//////////////////////////////////////////////////////////////
                            PRIVATE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -493,5 +465,33 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
                 _amount
             );
         }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function getOffer(
+        bytes32 _offerId
+    ) external view returns (Offer memory offer, OfferStatus status) {
+        return _getOffer(_offerId);
+    }
+
+    function encodeConstraints(
+        uint64 _validFrom,
+        uint64 _validUntil,
+        uint128 _maxSlippageBps
+    ) public view returns (uint256) {
+        return _encodeConstraints(_validFrom, _validUntil, _maxSlippageBps);
+    }
+
+    function decodeConstraints(
+        uint256 _encodedConstraints
+    )
+        public
+        view
+        returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
+    {
+        return _decodeConstraints(_encodedConstraints);
     }
 }

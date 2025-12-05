@@ -55,6 +55,10 @@ contract SettlementEngine is Ownable2Step {
         emit OrderbookSet(_orderbook);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                           INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     function _checkZeroAddress(address _addr) internal {
         if (_addr == address(0)) {
             revert SettlementEngine__AddressZero();

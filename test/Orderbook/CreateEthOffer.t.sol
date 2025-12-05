@@ -16,6 +16,8 @@ contract CreateEthOfferTest is TestSetup {
         assertEq(initialMakerBalance, INITIAL_MAKER_BALANCE);
         assertEq(initialEscrowBalance, 0);
 
+        assertEq(orderbook.nonce(), 1);
+
         (
             Orderbook.TokenAmount memory offer,
             uint256 constraints
@@ -52,7 +54,7 @@ contract CreateEthOfferTest is TestSetup {
             address(requestedToken),
             constraints
         );
-        orderbook.createEthOffer{value: OFFER_AMOUNT}(
+        bytes32 offerId = orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
             address(requestedToken),
             constraints
@@ -60,6 +62,37 @@ contract CreateEthOfferTest is TestSetup {
 
         assertEq(maker.balance, initialMakerBalance - OFFER_AMOUNT);
         assertEq(address(escrow).balance, initialEscrowBalance + OFFER_AMOUNT);
+
+        (
+            address maker_,
+            Orderbook.TokenAmount memory offer_,
+            address requestedToken_,
+            uint256 constraints_,
+            uint256 remainingAmount
+        ) = orderbook.offers(offerId);
+
+        assertEq(orderbook.nonce(), 2);
+
+        assertEq(maker_, maker);
+        assertEq(offer_.token, ETH);
+        assertEq(offer_.amount, OFFER_AMOUNT);
+        assertEq(requestedToken_, address(requestedToken));
+        assertEq(constraints_, constraints);
+        assertEq(remainingAmount, OFFER_AMOUNT);
+
+        (
+            uint64 validFrom_,
+            uint64 validUntil_,
+            uint128 maxSlippageBps_
+        ) = orderbook.decodeConstraints(constraints_);
+
+        assertEq(maxSlippageBps_, uint128(MAX_SLIPPAGE_BPS));
+        assertEq(validFrom_, uint64(validFrom));
+        assertEq(validUntil_, uint64(validUntil));
+
+        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+
+        assert(offerStatus == Orderbook.OfferStatus.Open);
     }
 
     /*//////////////////////////////////////////////////////////////

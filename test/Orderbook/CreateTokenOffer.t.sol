@@ -16,6 +16,8 @@ contract CreateTokenOfferTest is TestSetup {
         assertEq(initialMakerBalance, INITIAL_MAKER_BALANCE);
         assertEq(initialEscrowBalance, 0);
 
+        assertEq(orderbook.nonce(), 1);
+
         (
             Orderbook.TokenAmount memory offer,
             uint256 constraints
