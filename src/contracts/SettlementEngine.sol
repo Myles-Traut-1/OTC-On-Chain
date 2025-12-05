@@ -15,8 +15,6 @@ import {
 
 import {Orderbook} from "./Orderbook.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract SettlementEngine is Ownable2Step {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
