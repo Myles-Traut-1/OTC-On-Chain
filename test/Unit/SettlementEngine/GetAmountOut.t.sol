@@ -36,4 +36,24 @@ contract GetAmountOutTest is TestSetup {
 
         assertEq(amountOut, 2000e18);
     }
+
+    function test_GetAmountOut_TokenToToken() public {
+        // 2000 offeredToken = 1000 requestedToken -> 2:1 ratio
+
+        uint256 amountOut = settlementEngine.getAmountOut(
+            address(requestedToken),
+            address(offeredToken),
+            1e18
+        );
+
+        assertEq(amountOut, 2e18);
+
+        amountOut = settlementEngine.getAmountOut(
+            address(offeredToken),
+            address(requestedToken),
+            1e18
+        );
+
+        assertEq(amountOut, 0.5e18);
+    }
 }

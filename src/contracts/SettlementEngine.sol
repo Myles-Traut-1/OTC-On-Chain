@@ -117,58 +117,53 @@ contract SettlementEngine is Ownable2Step {
             (, int256 offeredTokenPrice, , , ) = offeredTokenFeed
                 .latestRoundData();
 
-            console.log("Offered Token Price:", offeredTokenPrice);
-
             // Adjust offeredTokenPrice to 18 decimals
             uint256 adjustedOfferedTokenPrice = (
                 (uint256(offeredTokenPrice) * 10 ** 10)
             );
 
-            console.log(
-                "Ajusted Offered Token Price:",
-                adjustedOfferedTokenPrice
-            );
-
             // Amount out of offered to return for requested amount of ETH
-
             amountOut = (_amountIn * adjustedOfferedTokenPrice) / PRECISION;
-
-            console.log("Amount Out:", amountOut);
         }
 
-        // (address requestedTokenFeedAddress, ) = orderbook.tokenInfo(
-        //     _requestedToken
-        // );
-        // (address offeredTokenFeedAddress, ) = orderbook.tokenInfo(
-        //     _offeredToken
-        // );
+        // Handle case for ERC20 to ERC20 swap via ETH
+        else {
+            // Get price feeds for both tokens
+            (address requestedTokenFeedAddress, ) = orderbook.tokenInfo(
+                _requestedToken
+            );
+            (address offeredTokenFeedAddress, ) = orderbook.tokenInfo(
+                _offeredToken
+            );
 
-        // AggregatorV3Interface requestedTokenFeed = AggregatorV3Interface(
-        //     requestedTokenFeedAddress
-        // );
-        // AggregatorV3Interface offeredTokenFeed = AggregatorV3Interface(
-        //     offeredTokenFeedAddress
-        // );
+            AggregatorV3Interface requestedTokenFeed = AggregatorV3Interface(
+                requestedTokenFeedAddress
+            );
+            AggregatorV3Interface offeredTokenFeed = AggregatorV3Interface(
+                offeredTokenFeedAddress
+            );
 
-        // (, int256 requestedTokenPrice, , , ) = requestedTokenFeed
-        //     .latestRoundData();
-        // (, int256 offeredTokenPrice, , , ) = offeredTokenFeed.latestRoundData();
+            (, int256 requestedTokenPrice, , , ) = requestedTokenFeed
+                .latestRoundData();
+            (, int256 offeredTokenPrice, , , ) = offeredTokenFeed
+                .latestRoundData();
 
-        // uint8 decimalsIn = requestedTokenFeed.decimals();
-        // uint8 decimalsOut = offeredTokenFeed.decimals();
+            uint256 requestedTokenDecimals = IERC20Metadata(_requestedToken)
+                .decimals();
+            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
+                .decimals();
 
-        // uint256 tokinInDecimals = IERC20Metadata(_requestedToken).decimals();
-        // uint256 tokinOutDecimals = IERC20Metadata(_offeredToken).decimals();
+            // Adjust amountIn to 18 decimals then adjust by PRECISION
+            uint256 adjustedAmountIn = ((_amountIn *
+                uint256(requestedTokenPrice)) /
+                (10 ** requestedTokenDecimals)) * PRECISION;
 
-        // // Adjust amountIn to 18 decimals then adjust by PRECISION
-        // uint256 adjustedAmountIn = ((_amountIn * uint256(requestedTokenPrice)) /
-        //     (10 ** tokinInDecimals)) * PRECISION;
-
-        // // Calculate amountOut and adjust for tokenOut decimals, then divide by PRECISION
-        // amountOut =
-        //     ((adjustedAmountIn * (10 ** decimalsOut)) /
-        //         uint256(offeredTokenPrice)) /
-        //     PRECISION;
+            // Calculate amountOut and adjust for tokenOut decimals, then divide by PRECISION
+            amountOut =
+                ((adjustedAmountIn * (10 ** offeredTokenDecimals)) /
+                    uint256(offeredTokenPrice)) /
+                PRECISION;
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
