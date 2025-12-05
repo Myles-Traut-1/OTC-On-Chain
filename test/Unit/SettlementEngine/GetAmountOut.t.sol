@@ -10,7 +10,7 @@ contract GetAmountOutTest is TestSetup {
                            GET AMOUNT OUT TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_GetAmountOut_OfferETH() public {
+    function test_GetAmountOut_OfferETH() public view {
         // 1000 requestedToken = 1 ETH
         uint256 expectedAmountOut = 1e15; // 0.001 requestedToken
 
@@ -23,7 +23,7 @@ contract GetAmountOutTest is TestSetup {
         assertEq(amountOut, expectedAmountOut);
     }
 
-    function test_GetAmountOut_RequestedETH() public {
+    function test_GetAmountOut_RequestedETH() public view {
         // 2000 offeredToken = 1 ETH
         uint256 expectedAmountOut = 2000e18;
 
@@ -36,7 +36,7 @@ contract GetAmountOutTest is TestSetup {
         assertEq(amountOut, expectedAmountOut);
     }
 
-    function test_GetAmountOut_TokenToToken() public {
+    function test_GetAmountOut_TokenToToken() public view {
         // 2000 offeredToken = 1000 requestedToken -> 2:1 ratio
 
         uint256 expectedAmountOut = 2e18;

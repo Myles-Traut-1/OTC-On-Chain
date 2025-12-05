@@ -289,7 +289,7 @@ contract OrderbookFuzzTest is TestSetup {
         uint64 _validFrom,
         uint64 _validUntil,
         uint128 _slippageBps
-    ) internal {
+    ) internal view {
         (uint64 validFrom, uint64 validUntil, uint128 slippageBps) = orderbook
             .decodeConstraints(_constraints);
         assertEq(slippageBps, _slippageBps);

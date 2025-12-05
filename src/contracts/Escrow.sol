@@ -112,13 +112,13 @@ contract Escrow is Ownable2Step {
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _checkZeroAddress(address _addr) internal {
+    function _checkZeroAddress(address _addr) internal pure {
         if (_addr == address(0)) {
             revert Escrow__AddressZero();
         }
     }
 
-    function _onlyOrderbook() internal {
+    function _onlyOrderbook() internal view {
         if (msg.sender != address(orderbook)) {
             revert Escrow__Unauthorized();
         }

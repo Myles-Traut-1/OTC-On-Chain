@@ -160,6 +160,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
                             ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// TODO Add Price Feed Validation
     function addToken(
         address _token,
         address _dataFeed
@@ -481,7 +482,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         uint64 _validFrom,
         uint64 _validUntil,
         uint128 _maxSlippageBps
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         return _encodeConstraints(_validFrom, _validUntil, _maxSlippageBps);
     }
 
@@ -489,7 +490,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         uint256 _encodedConstraints
     )
         public
-        view
+        pure
         returns (uint64 validFrom, uint64 validUntil, uint128 maxSlippageBps)
     {
         return _decodeConstraints(_encodedConstraints);

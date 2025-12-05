@@ -60,6 +60,7 @@ contract SettlementEngine is Ownable2Step {
         emit OrderbookSet(_orderbook);
     }
 
+    /// TODO Add support for variable token decimals
     function getAmountOut(
         address _offeredToken,
         address _requestedToken,
@@ -107,9 +108,6 @@ contract SettlementEngine is Ownable2Step {
             AggregatorV3Interface offeredTokenFeed = AggregatorV3Interface(
                 offeredTokenFeedAddress
             );
-
-            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
-                .decimals();
 
             // Get price of offered token for 1 ETH
             (, int256 offeredTokenPrice, , , ) = offeredTokenFeed
@@ -168,7 +166,7 @@ contract SettlementEngine is Ownable2Step {
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _checkZeroAddress(address _addr) internal {
+    function _checkZeroAddress(address _addr) internal pure {
         if (_addr == address(0)) {
             revert SettlementEngine__AddressZero();
         }
