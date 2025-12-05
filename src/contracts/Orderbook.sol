@@ -18,6 +18,7 @@ import {Escrow} from "./Escrow.sol";
 /// @notice Orderbook data model shared across the OTC desk suite.
 /// @dev Execution logic lives in dedicated settlement/escrow contracts;
 ///      this contract focuses on the canonical order schema, identifiers and status tracking so that other modules can integrate without duplicating definitions.
+/// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
 
 contract Orderbook is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
@@ -113,7 +114,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         uint256 amount;
     }
 
-    /// @notice Canonical order payload hashed for EIP-712 signatures.
     /// @dev Constraints are packed into a single uint256 for gas efficiency.
     /// @dev Constraintsts = uint64 validFrom | uint64 validUntil | uint128 maxSlippageBps
     struct Offer {

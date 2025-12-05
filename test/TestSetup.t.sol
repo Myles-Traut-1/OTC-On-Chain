@@ -43,8 +43,8 @@ contract TestSetup is Test {
         taker1 = makeAddr("taker1");
         taker2 = makeAddr("taker2");
 
-        offeredTokenEthFeed = new MockV3Aggregator(8, 2000e18); // $2000 per ETH
-        requestedTokenEthFeed = new MockV3Aggregator(8, 1000e18); // $1000 per ETH
+        offeredTokenEthFeed = new MockV3Aggregator(8, 2000e8); // $2000 per ETH
+        requestedTokenEthFeed = new MockV3Aggregator(8, 1000e8); // $1000 per ETH
 
         offeredToken = new ERC20Mock();
         requestedToken = new ERC20Mock();
