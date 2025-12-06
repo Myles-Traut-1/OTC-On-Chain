@@ -15,6 +15,8 @@ import {
 
 import {Orderbook} from "./Orderbook.sol";
 
+import {console} from "forge-std/console.sol";
+
 contract SettlementEngine is Ownable2Step {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -60,13 +62,16 @@ contract SettlementEngine is Ownable2Step {
         emit OrderbookSet(_orderbook);
     }
 
-    /// TODO Add support for variable token decimals
+    /// @dev Always returns in the _offeredToken's Decimals
     function getAmountOut(
         address _offeredToken,
         address _requestedToken,
-        uint256 _amountIn
+        uint256 _amountIn,
+        uint256 _offerAmount
     ) external view returns (uint256 amountOut) {
         // handle case for ETH as offered token
+
+        //Get Price of 1 _offeredToken in _requestedToken
         if (_offeredToken == orderbook.ETH_ADDRESS()) {
             // Requested Token -> ETH feed address
             // Offer ETH need to get Requested Token / ETH price feed
@@ -79,6 +84,9 @@ contract SettlementEngine is Ownable2Step {
 
             uint256 requestedTokenDecimals = IERC20Metadata(_requestedToken)
                 .decimals();
+            uint256 priceFeedDecimals = requestedTokenFeed.decimals();
+
+            console.log("Requested Token Decimals:", requestedTokenDecimals);
 
             // Get price of requested token for 1 ETH
             (, int256 requestedTokenPrice, , , ) = requestedTokenFeed
@@ -86,15 +94,18 @@ contract SettlementEngine is Ownable2Step {
 
             // Adjust requestedTokenPrice to 18 decimals
             uint256 adjustedRequestedTokenPrice = (
-                (uint256(requestedTokenPrice) * 10 ** 10)
+                (uint256(requestedTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
-            // Amount out of ETH to return for requested amount in of requested token
-            uint256 ajustedAmountIn = _amountIn * PRECISION;
+            console.log(
+                "Adjusted Requested Token Price:",
+                adjustedRequestedTokenPrice
+            );
 
+            // return in 18 decimals because ETH has 18 decimals
             amountOut =
-                ((ajustedAmountIn * (10 ** requestedTokenDecimals)) /
-                    adjustedRequestedTokenPrice) /
+                (((_amountIn * PRECISION) / adjustedRequestedTokenPrice) *
+                    _offerAmount) /
                 PRECISION;
         }
 
@@ -113,13 +124,29 @@ contract SettlementEngine is Ownable2Step {
             (, int256 offeredTokenPrice, , , ) = offeredTokenFeed
                 .latestRoundData();
 
+            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
+                .decimals();
+            uint256 priceFeedDecimals = offeredTokenFeed.decimals();
+
+            console.log("Offered Token Decimals:", offeredTokenDecimals);
+
             // Adjust offeredTokenPrice to 18 decimals
             uint256 adjustedOfferedTokenPrice = (
-                (uint256(offeredTokenPrice) * 10 ** 10)
+                (uint256(offeredTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
-            // Amount out of offered to return for requested amount of ETH
-            amountOut = (_amountIn * adjustedOfferedTokenPrice) / PRECISION;
+            console.log(
+                "Adjusted Offered Token Price:",
+                adjustedOfferedTokenPrice
+            );
+
+            uint256 scaledAmountOut = ((_amountIn * adjustedOfferedTokenPrice) /
+                _offerAmount);
+
+            uint256 decimalsDifference = 18 - offeredTokenDecimals;
+
+            /// @notice return in offeredToken's decimals
+            amountOut = scaledAmountOut / (10 ** decimalsDifference);
         }
 
         // Handle case for ERC20 to ERC20 swap via ETH
@@ -149,16 +176,26 @@ contract SettlementEngine is Ownable2Step {
             uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
                 .decimals();
 
-            // Adjust amountIn to 18 decimals then adjust by PRECISION
-            uint256 adjustedAmountIn = ((_amountIn *
-                uint256(requestedTokenPrice)) /
-                (10 ** requestedTokenDecimals)) * PRECISION;
+            uint256 priceFeedDecimalsRequested = requestedTokenFeed.decimals();
+            uint256 priceFeedDecimalsOffered = offeredTokenFeed.decimals();
+
+            //Adjust prices to 18 decimals
+            uint256 adjustedRequestedTokenPrice = (
+                (uint256(requestedTokenPrice) *
+                    10 ** (18 - priceFeedDecimalsRequested))
+            );
+            uint256 adjustedOfferedTokenPrice = (
+                (uint256(offeredTokenPrice) *
+                    10 ** (18 - priceFeedDecimalsOffered))
+            );
+            // Calculate OfferAmount
+            uint256 totalOffer = _offerAmount * adjustedOfferedTokenPrice;
+            uint256 totalRequest = _amountIn * adjustedRequestedTokenPrice;
+
+            uint256 scaledAmountOut = (totalOffer * PRECISION) / totalRequest;
 
             // Calculate amountOut and adjust for tokenOut decimals, then divide by PRECISION
-            amountOut =
-                ((adjustedAmountIn * (10 ** offeredTokenDecimals)) /
-                    uint256(offeredTokenPrice)) /
-                PRECISION;
+            amountOut = scaledAmountOut / (10 ** (18 - offeredTokenDecimals));
         }
     }
 
