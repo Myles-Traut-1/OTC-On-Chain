@@ -16,6 +16,12 @@ import {
 
 import {Orderbook} from "./Orderbook.sol";
 
+/// TODO: Add redundant price feeds
+/// TODO: Add PriceFeed staleness and deviation checks
+/// TODO: Add support for TWAP oracles
+/// TODO: Add pausable functionality
+/// TODO: Add upgradeable functionality
+/// TODO: Add emergencyWithdraw functionality with timelock
 contract SettlementEngine is Ownable2Step {
     using Math for uint256;
 

@@ -10,6 +10,8 @@ import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 import {MockV3Aggregator} from "@chainlink/src/v0.8/tests/MockV3Aggregator.sol";
 
+/// TODO: Refactor helpers in seperate contract
+
 contract TestSetup is Test {
     MockV3Aggregator offeredTokenEthFeed;
     MockV3Aggregator requestedTokenEthFeed;

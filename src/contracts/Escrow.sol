@@ -13,6 +13,8 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/// TODO: Add pausable functionality
+/// TODO: Add upgradeable functionality
 contract Escrow is Ownable2Step {
     using SafeERC20 for IERC20;
 
