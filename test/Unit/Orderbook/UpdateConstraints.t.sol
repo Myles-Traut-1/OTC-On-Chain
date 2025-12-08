@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {TestSetup} from "../TestSetup.t.sol";
-import {Orderbook} from "../../src/contracts/Orderbook.sol";
+import {TestSetup} from "../../TestSetup.t.sol";
+import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
 contract UpdateConstraintsTest is TestSetup {
     uint256 public newMaxSlippageBps = MAX_SLIPPAGE_BPS / 2;

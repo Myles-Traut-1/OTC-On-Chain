@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.25;
 
-import {TestSetup} from "../TestSetup.t.sol";
+import {TestSetup} from "../../TestSetup.t.sol";
 
 contract UpdateConstraintsTest is TestSetup {
     function test_EncodeDecodeConstraints() public view {
