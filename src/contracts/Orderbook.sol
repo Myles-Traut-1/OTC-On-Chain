@@ -14,6 +14,7 @@ import {
 } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import {Escrow} from "./Escrow.sol";
+import {SettlementEngine} from "./SettlementEngine.sol";
 
 /// @notice Orderbook data model shared across the OTC desk suite.
 /// @dev Execution logic lives in dedicated settlement/escrow contracts;
@@ -58,6 +59,12 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         bytes32 indexed orderId,
         address indexed maker,
         uint256 newConstraints
+    );
+    event OfferContributed(
+        bytes32 indexed orderId,
+        address indexed taker,
+        uint256 amountIn,
+        uint256 amountOut
     );
     event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
     event TokenAdded(address indexed token, address indexed dataFeed);
@@ -133,7 +140,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
     uint256 public nonce;
 
-    address public settlementEngine;
+    SettlementEngine public settlementEngine;
     Escrow public escrow;
 
     /*//////////////////////////////////////////////////////////////
@@ -148,11 +155,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         checkZeroAddress(_settlementEngine)
         checkZeroAddress(_escrow)
     {
-        settlementEngine = _settlementEngine;
+        settlementEngine = SettlementEngine(_settlementEngine);
         escrow = Escrow(payable(_escrow));
         nonce = 1;
 
-        emit SettlementEngineSet(settlementEngine);
+        emit SettlementEngineSet(address(settlementEngine));
         emit EscrowSet(address(escrow));
     }
 
@@ -298,7 +305,9 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         bytes32 _offerId,
         uint256 _newConstraints
     ) external {
-        (Offer memory offer, OfferStatus status) = _getOffer(_offerId);
+        Offer storage offer = offers[_offerId];
+        OfferStatus status = offerStatusById[_offerId];
+
         if (offer.maker != msg.sender) {
             revert Orderbook__NotOfferCreator();
         }
@@ -310,14 +319,45 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
         offer.constraints = _newConstraints;
 
-        offers[_offerId] = offer;
-
         emit OfferConstraintsUpdated(_offerId, msg.sender, _newConstraints);
     }
 
-    function contribute(bytes32 _offerId) public {
-        // Just here to update the OrderStatus
+    /// TODO: Validate constraints and add slippage checks
+    function contribute(
+        bytes32 _offerId,
+        uint256 _amount
+    ) public payable returns (uint256 amountOut) {
+        Offer storage offer = offers[_offerId];
+        OfferStatus status = offerStatusById[_offerId];
+
+        if (status != OfferStatus.Open) {
+            revert Orderbook__OfferNotOpen();
+        }
+
         offerStatusById[_offerId] = OfferStatus.InProgress;
+
+        if (offer.remainingAmount - _amount < 0) {
+            _amount = offer.remainingAmount;
+        }
+
+        offer.remainingAmount -= _amount;
+
+        amountOut = settlementEngine.getAmountOut(
+            offer.offer.token,
+            offer.requestedToken,
+            _amount,
+            offer.offer.amount
+        );
+
+        IERC20(offer.requestedToken).safeTransferFrom(
+            msg.sender,
+            offer.maker,
+            _amount
+        );
+
+        escrow.transferFunds(offer.offer.token, msg.sender, amountOut);
+
+        emit OfferContributed(_offerId, msg.sender, _amount, amountOut);
     }
 
     /*//////////////////////////////////////////////////////////////

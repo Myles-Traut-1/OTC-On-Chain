@@ -99,13 +99,21 @@ contract UpdateConstraintsTest is TestSetup {
     }
 
     function test_UpdateConstraints_RevertsIfStatusNotOpen() public {
+        uint256 contributedAmount = OFFER_AMOUNT / 2;
+
+        requestedToken.mint(taker1, contributedAmount);
+        requestedToken.approve(address(orderbook), contributedAmount);
+
         bytes32 offerId = _createAndReturnOffer(
             address(offeredToken),
             address(requestedToken)
         );
 
         // Simulate that the offer is in progress
-        orderbook.contribute(offerId);
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), contributedAmount);
+        orderbook.contribute(offerId, contributedAmount);
+        vm.stopPrank();
 
         (, uint256 newConstraints) = _generateOfferAmountsAndConstraints(
             address(offeredToken),
