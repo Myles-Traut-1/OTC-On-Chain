@@ -62,9 +62,11 @@ contract GetAmountOutTest is TestSetup {
     }
 
     function test_GetAmountOut_TokenToToken() public view {
-        // 2000 offeredToken = 1000 requestedToken -> 2:1 ratio
+        // 2000 offeredToken = 1 ETH
+        // 1000 requestedToken = 1 ETH
+        // Ratio = 2 offeredToken : 1 requestedToken
 
-        uint256 expectedAmountOut = 2e18;
+        uint256 expectedAmountOut = 0.5e18;
 
         uint256 amountOut = settlementEngine.getAmountOut(
             address(requestedToken),
@@ -73,11 +75,9 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out:", amountOut);
+        assertEq(amountOut, expectedAmountOut);
 
-        // assertEq(amountOut, expectedAmountOut);
-
-        expectedAmountOut = 0.5e18;
+        expectedAmountOut = 2e18;
 
         amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
@@ -86,9 +86,9 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out:", amountOut);
+        assertEq(amountOut, expectedAmountOut);
 
-        // assertEq(amountOut, expectedAmountOut);
+        expectedAmountOut = 1e18;
 
         amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
@@ -97,7 +97,9 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out:", amountOut);
+        assertEq(amountOut, expectedAmountOut);
+
+        expectedAmountOut = 2e6;
 
         amountOut = settlementEngine.getAmountOut(
             address(usdc),
@@ -106,7 +108,7 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out:", amountOut);
+        assertEq(amountOut, expectedAmountOut);
     }
 
     function test_GetAmountOut_VariableDecimals_OfferETH() public view {
@@ -120,7 +122,6 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out ETH for 2000e18 USDC:", amountOut);
         assertEq(amountOut, 1e18);
     }
 
@@ -135,7 +136,6 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out ETH for 2000e18 USDC:", amountOut);
         assertEq(amountOut, 2000e6);
     }
 }
