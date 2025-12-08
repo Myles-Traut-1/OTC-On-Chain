@@ -99,18 +99,12 @@ contract SettlementEngine is Ownable2Step {
                 (uint256(requestedTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
-            uint256 preAmountOut = Math.mulDiv(
-                _amountIn,
-                PRECISION,
-                adjustedRequestedTokenPrice
-            );
-
             ///@dev round in favour of offer creator
             // return in 18 decimals
             amountOut = Math.mulDiv(
-                preAmountOut,
+                _amountIn,
                 _offerAmount,
-                PRECISION,
+                adjustedRequestedTokenPrice,
                 Math.Rounding.Floor
             );
         }
