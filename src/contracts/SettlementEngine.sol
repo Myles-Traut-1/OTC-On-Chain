@@ -73,36 +73,25 @@ contract SettlementEngine is Ownable2Step {
 
         //Get Price of 1 _offeredToken in _requestedToken
         if (_offeredToken == orderbook.ETH_ADDRESS()) {
-            // Requested Token -> ETH feed address
             // Offer ETH need to get Requested Token / ETH price feed
             (address requestedTokenFeedAddress, ) = orderbook.tokenInfo(
                 _requestedToken
             );
-            AggregatorV3Interface requestedTokenFeed = AggregatorV3Interface(
-                requestedTokenFeedAddress
-            );
+
+            (
+                uint256 priceFeedDecimals,
+                uint256 requestedTokenPrice
+            ) = _getPriceFeedInfo(requestedTokenFeedAddress);
 
             uint256 requestedTokenDecimals = IERC20Metadata(_requestedToken)
                 .decimals();
-            uint256 priceFeedDecimals = requestedTokenFeed.decimals();
-
-            console.log("Requested Token Decimals:", requestedTokenDecimals);
-
-            // Get price of requested token for 1 ETH
-            (, int256 requestedTokenPrice, , , ) = requestedTokenFeed
-                .latestRoundData();
 
             // Adjust requestedTokenPrice to 18 decimals
             uint256 adjustedRequestedTokenPrice = (
                 (uint256(requestedTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
-            console.log(
-                "Adjusted Requested Token Price:",
-                adjustedRequestedTokenPrice
-            );
-
-            // return in 18 decimals because ETH has 18 decimals
+            // return in 18 decimals
             amountOut =
                 (((_amountIn * PRECISION) / adjustedRequestedTokenPrice) *
                     _offerAmount) /
@@ -111,33 +100,22 @@ contract SettlementEngine is Ownable2Step {
 
         // handle case for ETH as requested token
         else if (_requestedToken == orderbook.ETH_ADDRESS()) {
-            // Offered Token -> ETH feed address
             // Offering Token need to get Offered Token / ETH price feed
             (address offeredTokenFeedAddress, ) = orderbook.tokenInfo(
                 _offeredToken
             );
-            AggregatorV3Interface offeredTokenFeed = AggregatorV3Interface(
-                offeredTokenFeedAddress
-            );
 
-            // Get price of offered token for 1 ETH
-            (, int256 offeredTokenPrice, , , ) = offeredTokenFeed
-                .latestRoundData();
+            (
+                uint256 priceFeedDecimals,
+                uint256 offeredTokenPrice
+            ) = _getPriceFeedInfo(offeredTokenFeedAddress);
 
             uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
                 .decimals();
-            uint256 priceFeedDecimals = offeredTokenFeed.decimals();
-
-            console.log("Offered Token Decimals:", offeredTokenDecimals);
 
             // Adjust offeredTokenPrice to 18 decimals
             uint256 adjustedOfferedTokenPrice = (
                 (uint256(offeredTokenPrice) * 10 ** (18 - priceFeedDecimals))
-            );
-
-            console.log(
-                "Adjusted Offered Token Price:",
-                adjustedOfferedTokenPrice
             );
 
             uint256 scaledAmountOut = ((_amountIn * adjustedOfferedTokenPrice) /
@@ -159,25 +137,19 @@ contract SettlementEngine is Ownable2Step {
                 _offeredToken
             );
 
-            AggregatorV3Interface requestedTokenFeed = AggregatorV3Interface(
-                requestedTokenFeedAddress
-            );
-            AggregatorV3Interface offeredTokenFeed = AggregatorV3Interface(
-                offeredTokenFeedAddress
-            );
-
-            (, int256 requestedTokenPrice, , , ) = requestedTokenFeed
-                .latestRoundData();
-            (, int256 offeredTokenPrice, , , ) = offeredTokenFeed
-                .latestRoundData();
+            (
+                uint256 priceFeedDecimalsRequested,
+                uint256 requestedTokenPrice
+            ) = _getPriceFeedInfo(requestedTokenFeedAddress);
+            (
+                uint256 priceFeedDecimalsOffered,
+                uint256 offeredTokenPrice
+            ) = _getPriceFeedInfo(offeredTokenFeedAddress);
 
             uint256 requestedTokenDecimals = IERC20Metadata(_requestedToken)
                 .decimals();
             uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
                 .decimals();
-
-            uint256 priceFeedDecimalsRequested = requestedTokenFeed.decimals();
-            uint256 priceFeedDecimalsOffered = offeredTokenFeed.decimals();
 
             //Adjust prices to 18 decimals
             uint256 adjustedRequestedTokenPrice = (
@@ -207,5 +179,18 @@ contract SettlementEngine is Ownable2Step {
         if (_addr == address(0)) {
             revert SettlementEngine__AddressZero();
         }
+    }
+
+    function _getPriceFeedInfo(
+        address _priceFeed
+    ) internal view returns (uint256, uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(_priceFeed);
+
+        uint256 priceFeedDecimals = priceFeed.decimals();
+
+        // Get price of requested token for 1 ETH
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+
+        return (priceFeedDecimals, uint256(price));
     }
 }

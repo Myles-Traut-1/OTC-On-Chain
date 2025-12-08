@@ -40,8 +40,6 @@ contract GetAmountOutTest is TestSetup {
             1e18
         );
 
-        console.log("Amount Out:", amountOut);
-
         assertEq(amountOut, expectedAmountOut);
     }
 
