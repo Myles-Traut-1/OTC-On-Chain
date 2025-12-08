@@ -8,6 +8,7 @@ import {
 import {
     IERC20Metadata
 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {
     AggregatorV3Interface
@@ -15,9 +16,9 @@ import {
 
 import {Orderbook} from "./Orderbook.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract SettlementEngine is Ownable2Step {
+    using Math for uint256;
+
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -62,6 +63,10 @@ contract SettlementEngine is Ownable2Step {
         emit OrderbookSet(_orderbook);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @dev Always returns in the _offeredToken's Decimals
     function getAmountOut(
         address _offeredToken,
@@ -83,19 +88,25 @@ contract SettlementEngine is Ownable2Step {
                 uint256 requestedTokenPrice
             ) = _getPriceFeedInfo(requestedTokenFeedAddress);
 
-            uint256 requestedTokenDecimals = IERC20Metadata(_requestedToken)
-                .decimals();
-
             // Adjust requestedTokenPrice to 18 decimals
             uint256 adjustedRequestedTokenPrice = (
                 (uint256(requestedTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
+            uint256 preAmountOut = Math.mulDiv(
+                _amountIn,
+                PRECISION,
+                adjustedRequestedTokenPrice
+            );
+
+            ///@dev round in favour of offer creator
             // return in 18 decimals
-            amountOut =
-                (((_amountIn * PRECISION) / adjustedRequestedTokenPrice) *
-                    _offerAmount) /
-                PRECISION;
+            amountOut = Math.mulDiv(
+                preAmountOut,
+                _offerAmount,
+                PRECISION,
+                Math.Rounding.Floor
+            );
         }
 
         // handle case for ETH as requested token
@@ -118,8 +129,13 @@ contract SettlementEngine is Ownable2Step {
                 (uint256(offeredTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
-            uint256 scaledAmountOut = ((_amountIn * adjustedOfferedTokenPrice) /
-                _offerAmount);
+            // Calculate amountOut in 18 decimals
+            uint256 scaledAmountOut = Math.mulDiv(
+                _amountIn,
+                adjustedOfferedTokenPrice,
+                _offerAmount,
+                Math.Rounding.Floor
+            );
 
             uint256 decimalsDifference = 18 - offeredTokenDecimals;
 
@@ -146,8 +162,6 @@ contract SettlementEngine is Ownable2Step {
                 uint256 offeredTokenPrice
             ) = _getPriceFeedInfo(offeredTokenFeedAddress);
 
-            uint256 requestedTokenDecimals = IERC20Metadata(_requestedToken)
-                .decimals();
             uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
                 .decimals();
 
@@ -164,9 +178,15 @@ contract SettlementEngine is Ownable2Step {
             uint256 totalOffer = _offerAmount * adjustedOfferedTokenPrice;
             uint256 totalRequest = _amountIn * adjustedRequestedTokenPrice;
 
-            uint256 scaledAmountOut = (totalOffer * PRECISION) / totalRequest;
+            // Calculate amountOut in 18 decimals
+            uint256 scaledAmountOut = Math.mulDiv(
+                totalOffer,
+                PRECISION,
+                totalRequest,
+                Math.Rounding.Floor
+            );
 
-            // Calculate amountOut and adjust for tokenOut decimals, then divide by PRECISION
+            // Adjust for receivedToken's decimals
             amountOut = scaledAmountOut / (10 ** (18 - offeredTokenDecimals));
         }
     }
