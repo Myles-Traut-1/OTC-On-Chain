@@ -16,17 +16,15 @@ import {
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
-/// @notice Orderbook data model shared across the OTC desk suite.
-/// @dev Execution logic lives in dedicated settlement/escrow contracts;
-///      this contract focuses on the canonical order schema, identifiers and status tracking so that other modules can integrate without duplicating definitions.
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
-
 /// TODO: Add time-based offer expiration handling in relevant functions.
 /// TODO: Add slippage checks in contribute function.
+/// TODO: Add signature verification for off-chain order creation / contribution.
 /// TODO: Add pricefeed validation when adding tokens.
 /// TODO: Add pausable functionality
 /// TODO: Add upgradeable functionality
 /// TODO: Add interfaces for all contracts
+
 contract Orderbook is ReentrancyGuard, Ownable2Step {
     using SafeERC20 for IERC20;
 
