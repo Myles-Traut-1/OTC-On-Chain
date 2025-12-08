@@ -327,6 +327,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     }
 
     /// TODO: Validate constraints and add slippage checks
+    /// TODO: Add Filled Status handling
     function contribute(
         bytes32 _offerId,
         uint256 _amount
