@@ -153,8 +153,8 @@ contract ContributeTests is TestSetup {
         Orderbook.OfferStatus statusBefore = orderbook.offerStatusById(
             tokenOfferId
         );
-        // assertEq(remainingAmountBefore, OFFER_AMOUNT);
-        // assert(statusBefore == Orderbook.OfferStatus.Open);
+        assertEq(remainingAmountBefore, OFFER_AMOUNT);
+        assert(statusBefore == Orderbook.OfferStatus.Open);
 
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
@@ -167,6 +167,31 @@ contract ContributeTests is TestSetup {
         Orderbook.OfferStatus statusAfter = orderbook.offerStatusById(
             tokenOfferId
         );
-        //assert(statusAfter == Orderbook.OfferStatus.InProgress);
+        assert(statusAfter == Orderbook.OfferStatus.InProgress);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                             NEGATIVE TESTS
+    //////////////////////////////////////////////////////////////*/
+
+    function test_contribute_RevertsOfferNotOpen() public {
+        bytes32 invalidOfferId = bytes32("invalidOfferId");
+
+        vm.startPrank(taker1);
+        vm.expectRevert(Orderbook.Orderbook__OfferNotOpen.selector);
+        orderbook.contribute(invalidOfferId, CONTRIBUTE_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function test_contribute_RevertsAmountZero() public {
+        vm.startPrank(taker1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidContribution.selector,
+                0
+            )
+        );
+        orderbook.contribute(tokenOfferId, 0);
+        vm.stopPrank();
     }
 }

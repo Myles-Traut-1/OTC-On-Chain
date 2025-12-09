@@ -42,6 +42,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     error Orderbook__NotOfferCreator();
     error Orderbook__OfferNotOpen();
     error Orderbook__InvalidOfferId();
+    error Orderbook__InvalidContribution(uint256 amount);
     error Orderbook__UnsupportedToken(address token);
     error Orderbook__SameTokens();
 
@@ -332,11 +333,27 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         bytes32 _offerId,
         uint256 _amount
     ) public payable returns (uint256 amountOut) {
+        if (_amount == 0) {
+            revert Orderbook__InvalidContribution(0);
+        }
         Offer storage offer = offers[_offerId];
         OfferStatus status = offerStatusById[_offerId];
 
         if (status != OfferStatus.Open) {
             revert Orderbook__OfferNotOpen();
+        }
+
+        uint256 constraints_cache = offer.constraints;
+        (
+            uint64 validFrom,
+            uint64 validUntil,
+            uint128 slippageBps
+        ) = _decodeConstraints(constraints_cache);
+
+        if (block.timestamp < validFrom || block.timestamp > validUntil) {
+            revert Orderbook__InvalidConstraints(
+                "OFFER_EXPIRED_OR_NOT_STARTED"
+            );
         }
 
         offerStatusById[_offerId] = OfferStatus.InProgress;

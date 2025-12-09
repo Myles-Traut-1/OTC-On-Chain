@@ -111,7 +111,7 @@ contract SettlementEngine is Ownable2Step {
 
         // handle case for ETH as requested token
         else if (_requestedToken == orderbook.ETH_ADDRESS()) {
-            // Offering Token need to get Offered Token / ETH price feed
+            // Need to get Offered Token / ETH price feed
             (address offeredTokenFeedAddress, ) = orderbook.tokenInfo(
                 _offeredToken
             );
