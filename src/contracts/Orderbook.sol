@@ -103,7 +103,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     uint256 public constant MIN_OFFER_AMOUNT = 1e6; //Prevent griefing with dust offers
     uint256 public constant MIN_SLIPPAGE = 5; // 0.5% (scaled by 1000)
     uint256 public constant MAX_SLIPPAGE = 20; // Representing 2% (scaled by 1000)
-    uint256 public constant SCALE = 1e3; // Scale factor for basis points calculations
+    uint256 public constant SCALE = 1e4; // Scale factor for basis points calculations
 
     /// @notice Lifecycle states tracked on-chain to prevent replays.
     enum OfferStatus {
@@ -327,7 +327,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         emit OfferConstraintsUpdated(_offerId, msg.sender, _newConstraints);
     }
 
-    /// TODO: Validate constraints and add slippage checks
     /// TODO: Add Filled Status handling
     function contribute(
         bytes32 _offerId,
@@ -360,6 +359,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
         if (offer.remainingAmount - _amount < 0) {
             _amount = offer.remainingAmount;
+            offerStatusById[_offerId] = OfferStatus.Filled;
         }
 
         offer.remainingAmount -= _amount;

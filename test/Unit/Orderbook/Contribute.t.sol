@@ -7,7 +7,7 @@ import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ContributeTests is TestSetup {
-    uint256 public constant CONTRIBUTE_AMOUNT = OFFER_AMOUNT / 2; // 0.5 ether
+    uint256 public constant CONTRIBUTE_AMOUNT = OFFER_AMOUNT / 2; // 5 ether
 
     bytes32 public tokenOfferId;
     bytes32 public ethOfferId;
