@@ -141,4 +141,51 @@ contract TestSetup is Test {
             vm.stopPrank();
         }
     }
+
+    function _createAndReturnOfferWithConstraints(
+        address _offeredToken,
+        address _requestedToken,
+        uint256 _amount,
+        uint256 _maxSlippageBps,
+        uint256 _validFrom,
+        uint256 _validUntil
+    ) internal returns (bytes32 orderId) {
+        Orderbook.TokenAmount memory offer;
+        uint256 constraints;
+
+        if (_offeredToken == orderbook.ETH_ADDRESS()) {
+            (offer, constraints) = _generateOfferAmountsAndConstraints(
+                orderbook.ETH_ADDRESS(),
+                _amount,
+                _maxSlippageBps,
+                _validFrom,
+                _validUntil
+            );
+
+            vm.startPrank(maker);
+            orderId = orderbook.createEthOffer{value: _amount}(
+                offer,
+                address(_requestedToken),
+                constraints
+            );
+            vm.stopPrank();
+        } else {
+            (offer, constraints) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                _amount,
+                _maxSlippageBps,
+                _validFrom,
+                _validUntil
+            );
+
+            vm.startPrank(maker);
+            offeredToken.approve(address(orderbook), _amount);
+            orderId = orderbook.createTokenOffer(
+                offer,
+                address(_requestedToken),
+                constraints
+            );
+            vm.stopPrank();
+        }
+    }
 }

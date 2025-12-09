@@ -194,4 +194,46 @@ contract ContributeTests is TestSetup {
         orderbook.contribute(tokenOfferId, 0);
         vm.stopPrank();
     }
+
+    function test_contribute_RevertsBeforeValidFrom() public {
+        bytes32 offerId = _createAndReturnOfferWithConstraints(
+            address(offeredToken),
+            address(requestedToken),
+            OFFER_AMOUNT,
+            MAX_SLIPPAGE_BPS,
+            block.timestamp + 1 days,
+            block.timestamp + 10 days
+        );
+
+        vm.startPrank(taker1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "OFFER_EXPIRED_OR_NOT_STARTED"
+            )
+        );
+        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT);
+    }
+
+    function test_contribute_RevertsAfterValidUntil() public {
+        bytes32 offerId = _createAndReturnOfferWithConstraints(
+            address(offeredToken),
+            address(requestedToken),
+            OFFER_AMOUNT,
+            MAX_SLIPPAGE_BPS,
+            block.timestamp,
+            block.timestamp + 10 days
+        );
+
+        vm.warp(block.timestamp + 10 days + 1);
+
+        vm.startPrank(taker1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidConstraints.selector,
+                "OFFER_EXPIRED_OR_NOT_STARTED"
+            )
+        );
+        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT);
+    }
 }
