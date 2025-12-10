@@ -129,6 +129,9 @@ contract ContributeTests is TestSetup {
             expectedAmountOut
         );
         uint256 amountOut = orderbook.contribute(ethOfferId, CONTRIBUTE_AMOUNT);
+
+        // 5e18 * 1e18 / 1000e18 = 5e15
+        assertEq(amountOut, 5e15);
         vm.stopPrank();
 
         assertEq(

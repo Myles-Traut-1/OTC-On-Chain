@@ -92,7 +92,7 @@ contract SettlementEngine is Ownable2Step {
             // return in 18 decimals
             amountOut = Math.mulDiv(
                 _amountIn,
-                _offerAmount,
+                PRECISION,
                 adjustedRequestedTokenPrice,
                 Math.Rounding.Floor
             );
