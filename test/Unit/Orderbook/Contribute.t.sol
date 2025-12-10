@@ -6,8 +6,6 @@ import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract ContributeTests is TestSetup {
     uint256 public constant CONTRIBUTE_AMOUNT = OFFER_AMOUNT / 2; // 5 ether
 
@@ -57,8 +55,6 @@ contract ContributeTests is TestSetup {
             CONTRIBUTE_AMOUNT,
             OFFER_AMOUNT
         );
-
-        console.log("Expected Amount Out:", expectedAmountOut);
 
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);

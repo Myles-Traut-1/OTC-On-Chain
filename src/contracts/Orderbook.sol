@@ -16,8 +16,6 @@ import {
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
-import {console} from "forge-std/console.sol";
-
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
 /// TODO: Add slippage checks in contribute function.
 /// TODO: Add signature verification for off-chain order creation / contribution.

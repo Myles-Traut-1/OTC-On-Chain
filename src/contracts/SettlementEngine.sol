@@ -16,8 +16,6 @@ import {
 
 import {Orderbook} from "./Orderbook.sol";
 
-import {console} from "forge-std/console.sol";
-
 /// TODO: Add redundant price feeds
 /// TODO: Add support for TWAP oracles
 /// TODO: Add pausable functionality

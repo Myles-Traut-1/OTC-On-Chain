@@ -7,8 +7,6 @@ import {SettlementEngine} from "../../../src/contracts/SettlementEngine.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {MockV3Aggregator} from "@chainlink/src/v0.8/tests/MockV3Aggregator.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract GetAmountOutTest is TestSetup {
     MockUSDC public usdc;
     MockV3Aggregator public usdcEthFeed;
@@ -53,8 +51,6 @@ contract GetAmountOutTest is TestSetup {
             AMOUNT_IN,
             2000e18
         );
-
-        console.log(amountOut);
 
         assertEq(amountOut, expectedAmountOut);
     }
