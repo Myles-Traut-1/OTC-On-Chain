@@ -331,7 +331,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         emit OfferConstraintsUpdated(_offerId, msg.sender, _newConstraints);
     }
 
-    /// TODO: Add Filled Status handling
     function contribute(
         bytes32 _offerId,
         uint256 _amount

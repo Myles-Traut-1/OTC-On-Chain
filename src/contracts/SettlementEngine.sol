@@ -19,7 +19,6 @@ import {Orderbook} from "./Orderbook.sol";
 import {console} from "forge-std/console.sol";
 
 /// TODO: Add redundant price feeds
-/// TODO: Add PriceFeed staleness and deviation checks
 /// TODO: Add support for TWAP oracles
 /// TODO: Add pausable functionality
 /// TODO: Add upgradeable functionality
@@ -31,6 +30,7 @@ contract SettlementEngine is Ownable2Step {
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
     error SettlementEngine__AddressZero();
+    error SettlementEngine__PriceFeedStale();
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -52,6 +52,7 @@ contract SettlementEngine is Ownable2Step {
     Orderbook public orderbook;
 
     uint256 public constant PRECISION = 1e18;
+    uint256 public STALENESS_THRESHOLD = 1 hours;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -85,18 +86,8 @@ contract SettlementEngine is Ownable2Step {
         // handle case for ETH as offered token
         if (_offeredToken == orderbook.ETH_ADDRESS()) {
             // Offer ETH need to get Requested Token / ETH price feed
-            (address requestedTokenFeedAddress, ) = orderbook.tokenInfo(
-                _requestedToken
-            );
-
-            (
-                uint256 priceFeedDecimals,
-                uint256 requestedTokenPrice
-            ) = _getPriceFeedInfo(requestedTokenFeedAddress);
-
-            // Adjust requestedTokenPrice to 18 decimals
-            uint256 adjustedRequestedTokenPrice = (
-                (uint256(requestedTokenPrice) * 10 ** (18 - priceFeedDecimals))
+            uint256 adjustedRequestedTokenPrice = _getAdjustedPrice(
+                address(_requestedToken)
             );
 
             ///@dev round in favour of offer creator
@@ -112,21 +103,8 @@ contract SettlementEngine is Ownable2Step {
         // handle case for ETH as requested token
         else if (_requestedToken == orderbook.ETH_ADDRESS()) {
             // Need to get Offered Token / ETH price feed
-            (address offeredTokenFeedAddress, ) = orderbook.tokenInfo(
+            uint256 adjustedOfferedTokenPrice = _getAdjustedPrice(
                 _offeredToken
-            );
-
-            (
-                uint256 priceFeedDecimals,
-                uint256 offeredTokenPrice
-            ) = _getPriceFeedInfo(offeredTokenFeedAddress);
-
-            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
-                .decimals();
-
-            // Adjust offeredTokenPrice to 18 decimals
-            uint256 adjustedOfferedTokenPrice = (
-                (uint256(offeredTokenPrice) * 10 ** (18 - priceFeedDecimals))
             );
 
             // Calculate amountOut in 18 decimals
@@ -137,6 +115,9 @@ contract SettlementEngine is Ownable2Step {
                 Math.Rounding.Floor
             );
 
+            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
+                .decimals();
+
             uint256 decimalsDifference = 18 - offeredTokenDecimals;
 
             /// @notice return in offeredToken's decimals
@@ -146,38 +127,14 @@ contract SettlementEngine is Ownable2Step {
         // Handle case for ERC20 to ERC20 swap via ETH
         else {
             // Get price feeds for both tokens
-            (address requestedTokenFeedAddress, ) = orderbook.tokenInfo(
-                _requestedToken
+            uint256 adjustedRequestedTokenPrice = _getAdjustedPrice(
+                address(_requestedToken)
             );
-            (address offeredTokenFeedAddress, ) = orderbook.tokenInfo(
-                _offeredToken
-            );
-
-            (
-                uint256 priceFeedDecimalsRequested,
-                uint256 requestedTokenPrice
-            ) = _getPriceFeedInfo(requestedTokenFeedAddress);
-            (
-                uint256 priceFeedDecimalsOffered,
-                uint256 offeredTokenPrice
-            ) = _getPriceFeedInfo(offeredTokenFeedAddress);
-
-            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
-                .decimals();
-
-            //Adjust prices to 18 decimals
-            uint256 adjustedRequestedTokenPrice = (
-                (uint256(requestedTokenPrice) *
-                    10 ** (18 - priceFeedDecimalsRequested))
-            );
-            uint256 adjustedOfferedTokenPrice = (
-                (uint256(offeredTokenPrice) *
-                    10 ** (18 - priceFeedDecimalsOffered))
+            uint256 adjustedOfferedTokenPrice = _getAdjustedPrice(
+                address(_offeredToken)
             );
 
-            // Normalize totalOffer and totalRequest by dividing by PRECISION
-            uint256 totalOffer = (_offerAmount * adjustedOfferedTokenPrice) /
-                PRECISION;
+            // Normalize totalRequest by dividing by PRECISION
             uint256 totalRequest = (_amountIn * adjustedRequestedTokenPrice) /
                 PRECISION;
 
@@ -188,6 +145,9 @@ contract SettlementEngine is Ownable2Step {
                 adjustedOfferedTokenPrice,
                 Math.Rounding.Floor
             );
+
+            uint256 offeredTokenDecimals = IERC20Metadata(_offeredToken)
+                .decimals();
 
             uint256 decimalsDifference = 18 - offeredTokenDecimals;
 
@@ -206,6 +166,17 @@ contract SettlementEngine is Ownable2Step {
         }
     }
 
+    function _getAdjustedPrice(
+        address _token
+    ) internal view returns (uint256 adjustedPrice) {
+        (address feedAddress, ) = orderbook.tokenInfo(_token);
+
+        (uint256 decimals, uint256 tokenPrice) = _getPriceFeedInfo(feedAddress);
+
+        // Adjust requestedTokenPrice to 18 decimals
+        adjustedPrice = ((uint256(tokenPrice) * 10 ** (18 - decimals)));
+    }
+
     function _getPriceFeedInfo(
         address _priceFeed
     ) internal view returns (uint256, uint256) {
@@ -214,8 +185,16 @@ contract SettlementEngine is Ownable2Step {
         uint256 priceFeedDecimals = priceFeed.decimals();
 
         // Get price of requested token for 1 ETH
-        (, int256 price, , , ) = priceFeed.latestRoundData();
+        (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
+        _validatePriceFeedData(updatedAt);
 
         return (priceFeedDecimals, uint256(price));
+    }
+
+    /// TODO TEST!!
+    function _validatePriceFeedData(uint256 _updatedAt) internal view {
+        if (block.timestamp - _updatedAt > STALENESS_THRESHOLD) {
+            revert SettlementEngine__PriceFeedStale();
+        }
     }
 }
