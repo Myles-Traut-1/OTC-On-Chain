@@ -125,7 +125,7 @@ contract UpdateConstraintsTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpen.selector);
+        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
         orderbook.updateConstraints(offerId, newConstraints);
         vm.stopPrank();
     }

@@ -175,18 +175,21 @@ contract SettlementEngine is Ownable2Step {
                     10 ** (18 - priceFeedDecimalsOffered))
             );
 
-            // Calculate OfferAmount
-            uint256 totalOffer = _offerAmount * adjustedOfferedTokenPrice;
-            uint256 totalRequest = _amountIn * adjustedRequestedTokenPrice;
+            // Normalize totalOffer and totalRequest by dividing by PRECISION
+            uint256 totalOffer = (_offerAmount * adjustedOfferedTokenPrice) /
+                PRECISION;
+            uint256 totalRequest = (_amountIn * adjustedRequestedTokenPrice) /
+                PRECISION;
 
-            uint256 decimalsDifference = 18 - offeredTokenDecimals;
-
+            // Use Math.mulDiv with PRECISION for precise division
             uint256 scaledAmountOut = Math.mulDiv(
                 totalRequest,
                 PRECISION,
-                totalOffer,
+                adjustedOfferedTokenPrice,
                 Math.Rounding.Floor
             );
+
+            uint256 decimalsDifference = 18 - offeredTokenDecimals;
 
             // Adjust for offeredToken's decimals
             amountOut = scaledAmountOut / (10 ** decimalsDifference);

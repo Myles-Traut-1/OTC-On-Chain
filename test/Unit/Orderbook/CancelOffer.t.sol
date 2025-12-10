@@ -109,7 +109,7 @@ contract CancelOfferTest is TestSetup {
         vm.stopPrank();
 
         vm.startPrank(maker);
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpen.selector);
+        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
         orderbook.cancelOffer(offerId);
         vm.stopPrank();
     }

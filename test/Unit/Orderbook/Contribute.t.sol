@@ -210,6 +210,83 @@ contract ContributeTests is TestSetup {
         );
     }
 
+    function test_contribute_GreaterThanRemainingAmount() public {
+        uint256 excessiveContributeAmount = OFFER_AMOUNT * 4;
+        requestedToken.mint(taker1, excessiveContributeAmount);
+
+        uint256 escrowBalanceBefore = escrow.getTokenBalance(
+            address(offeredToken)
+        );
+
+        uint256 takerRequestedTokenBalanceBefore = requestedToken.balanceOf(
+            taker1
+        );
+
+        uint256 takerOfferedTokenBalanceBefore = offeredToken.balanceOf(taker1);
+
+        uint256 makerRequestedTokenBalanceBefore = requestedToken.balanceOf(
+            maker
+        );
+        assertEq(escrowBalanceBefore, OFFER_AMOUNT);
+        assertEq(
+            takerRequestedTokenBalanceBefore,
+            OFFER_AMOUNT * 4 + CONTRIBUTE_AMOUNT
+        );
+
+        assertEq(takerOfferedTokenBalanceBefore, 0);
+        assertEq(makerRequestedTokenBalanceBefore, 0);
+
+        (, , , , uint256 remainingAmountBefore) = orderbook.offers(
+            tokenOfferId
+        );
+        assertEq(remainingAmountBefore, OFFER_AMOUNT);
+
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), excessiveContributeAmount);
+        vm.expectEmit(false, false, false, true);
+        emit Orderbook.OfferStatusUpdated(
+            tokenOfferId,
+            Orderbook.OfferStatus.Filled
+        );
+        vm.expectEmit(true, true, true, true);
+        emit Orderbook.OfferContributed(
+            tokenOfferId,
+            taker1,
+            excessiveContributeAmount / 2,
+            OFFER_AMOUNT
+        );
+        uint256 amountOut = orderbook.contribute(
+            tokenOfferId,
+            excessiveContributeAmount
+        );
+        vm.stopPrank();
+
+        (, , , , uint256 remainingAmountAfter) = orderbook.offers(tokenOfferId);
+        assertEq(remainingAmountAfter, 0);
+        assertEq(amountOut, OFFER_AMOUNT);
+        assertEq(
+            escrow.getTokenBalance(address(offeredToken)),
+            remainingAmountAfter
+        );
+        assertEq(
+            requestedToken.balanceOf(taker1),
+            takerRequestedTokenBalanceBefore - (OFFER_AMOUNT * 2)
+        );
+        assertEq(
+            offeredToken.balanceOf(taker1),
+            takerOfferedTokenBalanceBefore + OFFER_AMOUNT
+        );
+        assertEq(
+            requestedToken.balanceOf(maker),
+            makerRequestedTokenBalanceBefore + (OFFER_AMOUNT * 2)
+        );
+
+        Orderbook.OfferStatus statusAfter = orderbook.offerStatusById(
+            tokenOfferId
+        );
+        assert(statusAfter == Orderbook.OfferStatus.Filled);
+    }
+
     /*//////////////////////////////////////////////////////////////
                              NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
@@ -218,8 +295,33 @@ contract ContributeTests is TestSetup {
         bytes32 invalidOfferId = bytes32("invalidOfferId");
 
         vm.startPrank(taker1);
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpen.selector);
+        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
         orderbook.contribute(invalidOfferId, CONTRIBUTE_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function test_contribute_RevertsOfferNotInProgress() public {
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
+        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
+        vm.stopPrank();
+
+        assert(
+            orderbook.offerStatusById(tokenOfferId) ==
+                Orderbook.OfferStatus.InProgress
+        );
+
+        vm.prank(maker);
+        orderbook.cancelOffer(tokenOfferId);
+
+        assert(
+            orderbook.offerStatusById(tokenOfferId) ==
+                Orderbook.OfferStatus.Cancelled
+        );
+
+        vm.startPrank(taker1);
+        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
+        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
         vm.stopPrank();
     }
 

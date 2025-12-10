@@ -16,6 +16,8 @@ import {
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
+import {console} from "forge-std/console.sol";
+
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
 /// TODO: Add slippage checks in contribute function.
 /// TODO: Add signature verification for off-chain order creation / contribution.
@@ -39,7 +41,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     error Orderbook__NotETH();
     error Orderbook__ETHTransferFailed();
     error Orderbook__NotOfferCreator();
-    error Orderbook__OfferNotOpen();
+    error Orderbook__OfferNotOpenOrInProgress();
     error Orderbook__InvalidOfferId();
     error Orderbook__InvalidContribution(uint256 amount);
     error Orderbook__UnsupportedToken(address token);
@@ -281,8 +283,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             revert Orderbook__NotOfferCreator();
         }
 
-        if (offerStatusById[_offerId] != OfferStatus.Open) {
-            revert Orderbook__OfferNotOpen();
+        if (
+            offerStatusById[_offerId] != OfferStatus.Open &&
+            offerStatusById[_offerId] != OfferStatus.InProgress
+        ) {
+            revert Orderbook__OfferNotOpenOrInProgress();
         }
 
         offerStatusById[_offerId] = OfferStatus.Cancelled;
@@ -316,7 +321,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             revert Orderbook__NotOfferCreator();
         }
         if (status != OfferStatus.Open) {
-            revert Orderbook__OfferNotOpen();
+            revert Orderbook__OfferNotOpenOrInProgress();
         }
 
         _validateConstraints(_newConstraints);
@@ -338,7 +343,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         OfferStatus status = offerStatusById[_offerId];
 
         if (status != OfferStatus.Open && status != OfferStatus.InProgress) {
-            revert Orderbook__OfferNotOpen();
+            revert Orderbook__OfferNotOpenOrInProgress();
         }
 
         uint256 constraints_cache = offer.constraints;
@@ -356,11 +361,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
         offerStatusById[_offerId] = OfferStatus.InProgress;
 
-        if (offer.remainingAmount - _amount < 0) {
-            _amount = offer.remainingAmount;
-            offerStatusById[_offerId] = OfferStatus.Filled;
-        }
-
         amountOut = settlementEngine.getAmountOut(
             offer.offer.token,
             offer.requestedToken,
@@ -368,17 +368,45 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             offer.offer.amount
         );
 
-        offer.remainingAmount -= amountOut;
+        if (amountOut > offer.remainingAmount) {
+            // Calculate amountIn required for remaining offer amount
+            uint256 requiredAmountIn = (_amount * offer.remainingAmount) /
+                amountOut;
 
-        IERC20(offer.requestedToken).safeTransferFrom(
-            msg.sender,
-            offer.maker,
-            _amount
-        );
+            amountOut = offer.remainingAmount;
 
-        escrow.transferFunds(offer.offer.token, msg.sender, amountOut);
+            offer.remainingAmount -= amountOut;
 
-        emit OfferContributed(_offerId, msg.sender, _amount, amountOut);
+            offerStatusById[_offerId] = OfferStatus.Filled;
+
+            IERC20(offer.requestedToken).safeTransferFrom(
+                msg.sender,
+                offer.maker,
+                requiredAmountIn
+            );
+
+            escrow.transferFunds(offer.offer.token, msg.sender, amountOut);
+
+            emit OfferStatusUpdated(_offerId, OfferStatus.Filled);
+            emit OfferContributed(
+                _offerId,
+                msg.sender,
+                requiredAmountIn,
+                amountOut
+            );
+        } else {
+            offer.remainingAmount -= amountOut;
+
+            IERC20(offer.requestedToken).safeTransferFrom(
+                msg.sender,
+                offer.maker,
+                _amount
+            );
+
+            escrow.transferFunds(offer.offer.token, msg.sender, amountOut);
+
+            emit OfferContributed(_offerId, msg.sender, _amount, amountOut);
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
