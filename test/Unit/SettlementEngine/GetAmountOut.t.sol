@@ -31,12 +31,12 @@ contract GetAmountOutTest is TestSetup {
 
     function test_GetAmountOut_OfferETH() public view {
         // 1000 requestedToken = 1 ETH
-        uint256 expectedAmountOut = 1e15; // 0.001 requestedToken
+        uint256 expectedAmountOut = 1e18; // 0.001 requestedToken
 
         uint256 amountOut = settlementEngine.getAmountOut(
             ETH,
             address(requestedToken),
-            AMOUNT_IN,
+            1000e18,
             1e18
         );
 
@@ -44,14 +44,14 @@ contract GetAmountOutTest is TestSetup {
     }
 
     function test_GetAmountOut_RequestedETH() public view {
-        // 2000 offeredToken = 1 ETH
+        // 1 ETH = 2000 offeredToken
         uint256 expectedAmountOut = 2000e18;
 
         uint256 amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
             ETH,
             AMOUNT_IN,
-            1e18
+            2000e18
         );
 
         console.log(amountOut);
@@ -64,18 +64,18 @@ contract GetAmountOutTest is TestSetup {
         // 1000 requestedToken = 1 ETH
         // Ratio = 2 offeredToken : 1 requestedToken
 
-        uint256 expectedAmountOut = 0.5e18;
+        uint256 expectedAmountOut = 1e18;
 
         uint256 amountOut = settlementEngine.getAmountOut(
             address(requestedToken),
             address(offeredToken),
-            AMOUNT_IN,
+            AMOUNT_IN / 2,
             1e18
         );
 
         assertEq(amountOut, expectedAmountOut);
 
-        expectedAmountOut = 2e18;
+        expectedAmountOut = 0.5e18;
 
         amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
@@ -97,7 +97,7 @@ contract GetAmountOutTest is TestSetup {
 
         assertEq(amountOut, expectedAmountOut);
 
-        expectedAmountOut = 2e6;
+        expectedAmountOut = 0.5e6;
 
         amountOut = settlementEngine.getAmountOut(
             address(usdc),

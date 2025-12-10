@@ -16,6 +16,8 @@ import {
 
 import {Orderbook} from "./Orderbook.sol";
 
+import {console} from "forge-std/console.sol";
+
 /// TODO: Add redundant price feeds
 /// TODO: Add PriceFeed staleness and deviation checks
 /// TODO: Add support for TWAP oracles
@@ -81,8 +83,6 @@ contract SettlementEngine is Ownable2Step {
         uint256 _offerAmount
     ) external view returns (uint256 amountOut) {
         // handle case for ETH as offered token
-
-        //Get Price of 1 _offeredToken in _requestedToken
         if (_offeredToken == orderbook.ETH_ADDRESS()) {
             // Offer ETH need to get Requested Token / ETH price feed
             (address requestedTokenFeedAddress, ) = orderbook.tokenInfo(
@@ -133,7 +133,7 @@ contract SettlementEngine is Ownable2Step {
             uint256 scaledAmountOut = Math.mulDiv(
                 _amountIn,
                 adjustedOfferedTokenPrice,
-                _offerAmount,
+                PRECISION,
                 Math.Rounding.Floor
             );
 
@@ -174,20 +174,22 @@ contract SettlementEngine is Ownable2Step {
                 (uint256(offeredTokenPrice) *
                     10 ** (18 - priceFeedDecimalsOffered))
             );
+
             // Calculate OfferAmount
             uint256 totalOffer = _offerAmount * adjustedOfferedTokenPrice;
             uint256 totalRequest = _amountIn * adjustedRequestedTokenPrice;
 
-            // Calculate amountOut in 18 decimals
+            uint256 decimalsDifference = 18 - offeredTokenDecimals;
+
             uint256 scaledAmountOut = Math.mulDiv(
-                totalOffer,
-                PRECISION,
                 totalRequest,
+                PRECISION,
+                totalOffer,
                 Math.Rounding.Floor
             );
 
-            // Adjust for receivedToken's decimals
-            amountOut = scaledAmountOut / (10 ** (18 - offeredTokenDecimals));
+            // Adjust for offeredToken's decimals
+            amountOut = scaledAmountOut / (10 ** decimalsDifference);
         }
     }
 
