@@ -162,16 +162,52 @@ contract ContributeTests is TestSetup {
 
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
-        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
+        uint256 amountOut = orderbook.contribute(
+            tokenOfferId,
+            CONTRIBUTE_AMOUNT
+        );
         vm.stopPrank();
 
         (, , , , uint256 remainingAmountAfter) = orderbook.offers(tokenOfferId);
-        assertEq(remainingAmountAfter, OFFER_AMOUNT - CONTRIBUTE_AMOUNT);
+        assertEq(remainingAmountAfter, OFFER_AMOUNT - amountOut);
 
         Orderbook.OfferStatus statusAfter = orderbook.offerStatusById(
             tokenOfferId
         );
         assert(statusAfter == Orderbook.OfferStatus.InProgress);
+    }
+
+    function test_contribute_MultipleContributions() public {
+        (, , , , uint256 remainingAmountBefore) = orderbook.offers(
+            tokenOfferId
+        );
+        assertEq(remainingAmountBefore, OFFER_AMOUNT);
+
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
+        uint256 amountOut = orderbook.contribute(
+            tokenOfferId,
+            CONTRIBUTE_AMOUNT
+        );
+        vm.stopPrank();
+
+        (, , , , uint256 remainingAmountAfter) = orderbook.offers(tokenOfferId);
+        assertEq(remainingAmountAfter, OFFER_AMOUNT - amountOut);
+
+        requestedToken.mint(taker1, CONTRIBUTE_AMOUNT);
+
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
+        amountOut = orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
+        vm.stopPrank();
+
+        (, , , , remainingAmountAfter) = orderbook.offers(tokenOfferId);
+
+        assertEq(remainingAmountAfter, OFFER_AMOUNT - amountOut - amountOut);
+        assertEq(
+            escrow.getTokenBalance(address(offeredToken)),
+            remainingAmountAfter
+        );
     }
 
     /*//////////////////////////////////////////////////////////////

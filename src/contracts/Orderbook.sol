@@ -16,10 +16,7 @@ import {
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
-import {console} from "forge-std/console.sol";
-
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
-/// TODO: Add time-based offer expiration handling in relevant functions.
 /// TODO: Add slippage checks in contribute function.
 /// TODO: Add signature verification for off-chain order creation / contribution.
 /// TODO: Add pricefeed validation when adding tokens.
@@ -340,7 +337,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         Offer storage offer = offers[_offerId];
         OfferStatus status = offerStatusById[_offerId];
 
-        if (status != OfferStatus.Open) {
+        if (status != OfferStatus.Open && status != OfferStatus.InProgress) {
             revert Orderbook__OfferNotOpen();
         }
 
@@ -364,17 +361,14 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             offerStatusById[_offerId] = OfferStatus.Filled;
         }
 
-        offer.remainingAmount -= _amount;
-
-        console.log("Contributing Amount In:", _amount);
-        console.log("Offer Amount :", offer.offer.amount);
-
         amountOut = settlementEngine.getAmountOut(
             offer.offer.token,
             offer.requestedToken,
             _amount,
             offer.offer.amount
         );
+
+        offer.remainingAmount -= amountOut;
 
         IERC20(offer.requestedToken).safeTransferFrom(
             msg.sender,
