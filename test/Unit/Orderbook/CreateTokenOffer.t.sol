@@ -259,27 +259,10 @@ contract CreateTokenOfferTest is TestSetup {
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
                 OFFER_AMOUNT,
-                0,
-                validFrom,
+                MAX_SLIPPAGE_BPS,
+                block.timestamp - 1,
                 validUntil
             );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
-                "MIN_SLIPPAGE"
-            )
-        );
-        orderbook.createTokenOffer(offer, address(requestedToken), constraints);
-        vm.stopPrank();
-
-        (offer, constraints) = _generateOfferAmountsAndConstraints(
-            address(offeredToken),
-            OFFER_AMOUNT,
-            MAX_SLIPPAGE_BPS,
-            block.timestamp - 1,
-            validUntil
-        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -288,7 +271,6 @@ contract CreateTokenOfferTest is TestSetup {
             )
         );
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
-        vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
             address(offeredToken),

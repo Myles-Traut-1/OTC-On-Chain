@@ -112,7 +112,7 @@ contract UpdateConstraintsTest is TestSetup {
         // Simulate that the offer is in progress
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), contributedAmount);
-        orderbook.contribute(offerId, contributedAmount);
+        orderbook.contribute(offerId, contributedAmount, tokenQuote);
         vm.stopPrank();
 
         (, uint256 newConstraints) = _generateOfferAmountsAndConstraints(
@@ -162,20 +162,6 @@ contract UpdateConstraintsTest is TestSetup {
             abi.encodeWithSelector(
                 Orderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_UNTIL"
-            )
-        );
-        orderbook.updateConstraints(offerId, invalidConstraints);
-
-        invalidConstraints = orderbook.encodeConstraints(
-            uint64(newValidFrom),
-            uint64(newValidUntil),
-            uint128(0)
-        );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
-                "MIN_SLIPPAGE"
             )
         );
         orderbook.updateConstraints(offerId, invalidConstraints);

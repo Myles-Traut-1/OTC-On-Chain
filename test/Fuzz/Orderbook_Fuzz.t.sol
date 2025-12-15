@@ -21,7 +21,6 @@ contract OrderbookFuzzTest is TestSetup {
 
         minOfferAmount = orderbook.MIN_OFFER_AMOUNT();
         maxSlippageBps = orderbook.MAX_SLIPPAGE();
-        minSlippageBps = orderbook.MIN_SLIPPAGE();
 
         initialEscrowEthBalance = address(escrow).balance;
         initialEscrowTokenBalance = offeredToken.balanceOf(address(escrow));
@@ -51,9 +50,7 @@ contract OrderbookFuzzTest is TestSetup {
             bound(_validUntil, _validFrom + 1, _validFrom + 30 days)
         );
 
-        _slippageBps = uint128(
-            bound(_slippageBps, minSlippageBps, maxSlippageBps)
-        ); // 0.5% - 2%
+        _slippageBps = uint128(bound(_slippageBps, 0, maxSlippageBps)); // 2% MAX
 
         vm.startPrank(maker);
 

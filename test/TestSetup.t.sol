@@ -33,9 +33,14 @@ contract TestSetup is Test {
     uint256 public constant INITIAL_MAKER_BALANCE = 100 ether;
 
     uint256 public constant OFFER_AMOUNT = 10 ether;
-    uint256 public constant MIN_FILL_AMOUNT = 1 ether;
+    uint256 public constant CONTRIBUTE_AMOUNT = OFFER_AMOUNT / 2; // 5 ether
+
     uint256 public validFrom = uint64(block.timestamp);
     uint256 public validUntil = uint64(block.timestamp + 1 days);
+
+    // Quotes used to determine slippage.
+    uint256 tokenQuote;
+    uint256 ethQuote;
 
     uint128 public constant MAX_SLIPPAGE_BPS = 20; // 2%
 
@@ -72,6 +77,19 @@ contract TestSetup is Test {
         deal(maker, INITIAL_MAKER_BALANCE);
 
         ETH = orderbook.ETH_ADDRESS();
+
+        tokenQuote = settlementEngine.getAmountOut(
+            address(offeredToken),
+            address(requestedToken),
+            CONTRIBUTE_AMOUNT,
+            OFFER_AMOUNT
+        );
+        ethQuote = settlementEngine.getAmountOut(
+            address(ETH),
+            address(requestedToken),
+            CONTRIBUTE_AMOUNT,
+            OFFER_AMOUNT
+        );
     }
 
     /*//////////////////////////////////////////////////////////////

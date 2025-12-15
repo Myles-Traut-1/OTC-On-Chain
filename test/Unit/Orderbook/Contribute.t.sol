@@ -6,9 +6,9 @@ import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract ContributeTests is TestSetup {
-    uint256 public constant CONTRIBUTE_AMOUNT = OFFER_AMOUNT / 2; // 5 ether
+import {console} from "forge-std/console.sol";
 
+contract ContributeTests is TestSetup {
     bytes32 public tokenOfferId;
     bytes32 public ethOfferId;
 
@@ -67,7 +67,8 @@ contract ContributeTests is TestSetup {
         );
         uint256 amountOut = orderbook.contribute(
             tokenOfferId,
-            CONTRIBUTE_AMOUNT
+            CONTRIBUTE_AMOUNT,
+            tokenQuote
         );
         vm.stopPrank();
 
@@ -128,7 +129,11 @@ contract ContributeTests is TestSetup {
             CONTRIBUTE_AMOUNT,
             expectedAmountOut
         );
-        uint256 amountOut = orderbook.contribute(ethOfferId, CONTRIBUTE_AMOUNT);
+        uint256 amountOut = orderbook.contribute(
+            ethOfferId,
+            CONTRIBUTE_AMOUNT,
+            ethQuote
+        );
 
         // 5e18 * 1e18 / 1000e18 = 5e15
         assertEq(amountOut, 5e15);
@@ -163,7 +168,8 @@ contract ContributeTests is TestSetup {
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
         uint256 amountOut = orderbook.contribute(
             tokenOfferId,
-            CONTRIBUTE_AMOUNT
+            CONTRIBUTE_AMOUNT,
+            tokenQuote
         );
         vm.stopPrank();
 
@@ -186,7 +192,8 @@ contract ContributeTests is TestSetup {
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
         uint256 amountOut = orderbook.contribute(
             tokenOfferId,
-            CONTRIBUTE_AMOUNT
+            CONTRIBUTE_AMOUNT,
+            tokenQuote
         );
         vm.stopPrank();
 
@@ -197,7 +204,11 @@ contract ContributeTests is TestSetup {
 
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
-        amountOut = orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
+        amountOut = orderbook.contribute(
+            tokenOfferId,
+            CONTRIBUTE_AMOUNT,
+            tokenQuote
+        );
         vm.stopPrank();
 
         (, , , , remainingAmountAfter) = orderbook.offers(tokenOfferId);
@@ -256,7 +267,8 @@ contract ContributeTests is TestSetup {
         );
         uint256 amountOut = orderbook.contribute(
             tokenOfferId,
-            excessiveContributeAmount
+            excessiveContributeAmount,
+            tokenQuote
         );
         vm.stopPrank();
 
@@ -286,6 +298,45 @@ contract ContributeTests is TestSetup {
         assert(statusAfter == Orderbook.OfferStatus.Filled);
     }
 
+    function test_contribute_SucceedsMaximumSlippage() public {
+        bytes32 offerId = _createAndReturnOfferWithConstraints(
+            address(offeredToken),
+            address(requestedToken),
+            OFFER_AMOUNT,
+            10, // 1% max slippage
+            block.timestamp,
+            block.timestamp + 10 days
+        );
+
+        (, int256 requestedPriceToken, , , ) = requestedTokenEthFeed
+            .latestRoundData();
+
+        // Mock Price drop of 1% - 1
+        vm.prank(owner);
+        requestedTokenEthFeed.updateAnswer(int256((990e8))); // 1% worse -> should succeed
+
+        (, int256 mockPriceDrop, , , ) = requestedTokenEthFeed
+            .latestRoundData();
+
+        uint256 onePercent = (uint256(requestedPriceToken) * 10) / 1000;
+
+        assertEq(
+            uint256(mockPriceDrop),
+            (uint256(requestedPriceToken) - onePercent)
+        );
+
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
+        uint256 amountOut = orderbook.contribute(
+            offerId,
+            CONTRIBUTE_AMOUNT,
+            tokenQuote
+        );
+        vm.stopPrank();
+
+        assertEq(amountOut, tokenQuote - ((tokenQuote * 10) / 1000)); // 1% slippage applied
+    }
+
     /*//////////////////////////////////////////////////////////////
                              NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
@@ -295,14 +346,14 @@ contract ContributeTests is TestSetup {
 
         vm.startPrank(taker1);
         vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
-        orderbook.contribute(invalidOfferId, CONTRIBUTE_AMOUNT);
+        orderbook.contribute(invalidOfferId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
     }
 
     function test_contribute_RevertsOfferNotInProgress() public {
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
-        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
+        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
 
         assert(
@@ -320,7 +371,7 @@ contract ContributeTests is TestSetup {
 
         vm.startPrank(taker1);
         vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
-        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT);
+        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
     }
 
@@ -332,7 +383,7 @@ contract ContributeTests is TestSetup {
                 0
             )
         );
-        orderbook.contribute(tokenOfferId, 0);
+        orderbook.contribute(tokenOfferId, 0, tokenQuote);
         vm.stopPrank();
     }
 
@@ -353,7 +404,7 @@ contract ContributeTests is TestSetup {
                 "OFFER_EXPIRED_OR_NOT_STARTED"
             )
         );
-        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT);
+        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT, tokenQuote);
     }
 
     function test_contribute_RevertsAfterValidUntil() public {
@@ -375,6 +426,41 @@ contract ContributeTests is TestSetup {
                 "OFFER_EXPIRED_OR_NOT_STARTED"
             )
         );
-        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT);
+        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT, tokenQuote);
+    }
+
+    function test_contributeReverts_SlippageExceeded() public {
+        bytes32 offerId = _createAndReturnOfferWithConstraints(
+            address(offeredToken),
+            address(requestedToken),
+            OFFER_AMOUNT,
+            10, // 1% max slippage
+            block.timestamp,
+            block.timestamp + 10 days
+        );
+
+        (, int256 requestedPriceToken, , , ) = requestedTokenEthFeed
+            .latestRoundData();
+
+        // Mock Price drop of 1% - 1
+        vm.prank(owner);
+        requestedTokenEthFeed.updateAnswer(int256((990e8) - 1)); // 1% - 1 worse
+
+        (, int256 mockPriceDrop, , , ) = requestedTokenEthFeed
+            .latestRoundData();
+
+        uint256 onePercent = (uint256(requestedPriceToken) * 10) / 1000;
+
+        assertEq(
+            uint256(mockPriceDrop),
+            (uint256(requestedPriceToken) - onePercent) - 1
+        );
+
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
+        vm.expectRevert(Orderbook.Orderbook__SlippageExceeded.selector);
+        // Call with normal quote which is now invalid due to price drop
+        orderbook.contribute(offerId, CONTRIBUTE_AMOUNT, tokenQuote);
+        vm.stopPrank();
     }
 }

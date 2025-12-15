@@ -42,6 +42,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     error Orderbook__OfferNotOpenOrInProgress();
     error Orderbook__InvalidOfferId();
     error Orderbook__InvalidContribution(uint256 amount);
+    error Orderbook__SlippageExceeded();
     error Orderbook__UnsupportedToken(address token);
     error Orderbook__SameTokens();
 
@@ -100,9 +101,8 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     uint256 public constant MIN_OFFER_AMOUNT = 1e6; //Prevent griefing with dust offers
-    uint256 public constant MIN_SLIPPAGE = 5; // 0.5% (scaled by 1000)
     uint256 public constant MAX_SLIPPAGE = 20; // Representing 2% (scaled by 1000)
-    uint256 public constant SCALE = 1e4; // Scale factor for basis points calculations
+    uint256 public constant SCALE = 1e3; // Scale factor for basis points calculations
 
     /// @notice Lifecycle states tracked on-chain to prevent replays.
     enum OfferStatus {
@@ -331,7 +331,8 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
     function contribute(
         bytes32 _offerId,
-        uint256 _amount
+        uint256 _amount,
+        uint256 _quote
     ) public payable returns (uint256 amountOut) {
         if (_amount == 0) {
             revert Orderbook__InvalidContribution(0);
@@ -365,6 +366,11 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             offer.offer.amount
         );
 
+        uint256 minAmountOut = _quote - ((_quote * slippageBps) / SCALE);
+
+        if (amountOut < minAmountOut) {
+            revert Orderbook__SlippageExceeded();
+        }
         if (amountOut > offer.remainingAmount) {
             // Calculate amountIn required for remaining offer amount
             uint256 requiredAmountIn = (_amount * offer.remainingAmount) /
@@ -451,8 +457,6 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         ) = decodeConstraints(_constraints);
         if (slippageBps > MAX_SLIPPAGE) {
             revert Orderbook__InvalidConstraints("MAX_SLIPPAGE");
-        } else if (slippageBps < MIN_SLIPPAGE) {
-            revert Orderbook__InvalidConstraints("MIN_SLIPPAGE");
         } else if (validFrom < block.timestamp) {
             revert Orderbook__InvalidConstraints("VALID_FROM");
         } else if (validUntil <= validFrom) {

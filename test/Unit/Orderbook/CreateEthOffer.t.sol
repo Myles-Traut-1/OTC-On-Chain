@@ -309,38 +309,16 @@ contract CreateEthOfferTest is TestSetup {
 
     function test_CreateEthOffer_Reverts_InvalidConstraints() public {
         vm.startPrank(maker);
-
         (
             Orderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
                 OFFER_AMOUNT,
-                0,
-                validFrom,
+                MAX_SLIPPAGE_BPS,
+                block.timestamp - 1,
                 validUntil
             );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
-                "MIN_SLIPPAGE"
-            )
-        );
-        orderbook.createEthOffer{value: OFFER_AMOUNT}(
-            offer,
-            address(requestedToken),
-            constraints
-        );
-        vm.stopPrank();
-
-        (offer, constraints) = _generateOfferAmountsAndConstraints(
-            ETH,
-            OFFER_AMOUNT,
-            MAX_SLIPPAGE_BPS,
-            block.timestamp - 1,
-            validUntil
-        );
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -353,7 +331,6 @@ contract CreateEthOfferTest is TestSetup {
             address(requestedToken),
             constraints
         );
-        vm.stopPrank();
 
         (offer, constraints) = _generateOfferAmountsAndConstraints(
             ETH,
