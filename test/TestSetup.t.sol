@@ -6,6 +6,8 @@ import {Orderbook} from "../src/contracts/Orderbook.sol";
 import {Escrow} from "../src/contracts/Escrow.sol";
 import {SettlementEngine} from "../src/contracts/SettlementEngine.sol";
 
+import {Deployer} from "../script/Deploy.s.sol";
+
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 import {MockV3Aggregator} from "@chainlink/src/v0.8/tests/MockV3Aggregator.sol";
@@ -13,6 +15,8 @@ import {MockV3Aggregator} from "@chainlink/src/v0.8/tests/MockV3Aggregator.sol";
 /// TODO: Refactor helpers in seperate contract
 
 contract TestSetup is Test {
+    Deployer public deployer;
+
     MockV3Aggregator offeredTokenEthFeed;
     MockV3Aggregator requestedTokenEthFeed;
 
@@ -53,15 +57,15 @@ contract TestSetup is Test {
         offeredTokenEthFeed = new MockV3Aggregator(8, 2000e8); // $2000 per ETH
         requestedTokenEthFeed = new MockV3Aggregator(8, 1000e8); // $1000 per ETH
 
+        deployer = new Deployer();
+        (orderbook, escrow, settlementEngine) = deployer.run(owner);
+
         offeredToken = new ERC20Mock();
         requestedToken = new ERC20Mock();
 
         offeredToken.mint(maker, INITIAL_MAKER_BALANCE);
 
         vm.startPrank(owner);
-        settlementEngine = new SettlementEngine();
-        escrow = new Escrow();
-        orderbook = new Orderbook(address(settlementEngine), address(escrow));
 
         escrow.setOrderbook(address(orderbook));
         settlementEngine.setOrderbook(address(orderbook));
