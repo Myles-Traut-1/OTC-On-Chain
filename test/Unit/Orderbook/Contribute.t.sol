@@ -11,6 +11,7 @@ import {console} from "forge-std/console.sol";
 contract ContributeTests is TestSetup {
     bytes32 public tokenOfferId;
     bytes32 public ethOfferId;
+    bytes32 public ethToTokenOfferId;
 
     function setUp() public override {
         super.setUp();
@@ -71,6 +72,8 @@ contract ContributeTests is TestSetup {
             tokenQuote
         );
         vm.stopPrank();
+
+        assertEq(amountOut, 2.5 ether);
 
         assertEq(
             offeredToken.balanceOf(address(escrow)),
@@ -151,6 +154,42 @@ contract ContributeTests is TestSetup {
         assertEq(
             requestedToken.balanceOf(maker),
             makerRequestedTokenBalanceBefore + CONTRIBUTE_AMOUNT
+        );
+    }
+
+    function test_contribute_EthToToken() public {
+        uint256 makerEthBalanceBefore = maker.balance;
+        uint256 takerOfferedTokenBalanceBefore = offeredToken.balanceOf(taker1);
+
+        ethToTokenOfferId = _createAndReturnOffer(address(offeredToken), ETH);
+
+        uint256 quote = settlementEngine.getAmountOut(
+            address(offeredToken),
+            ETH,
+            5e15,
+            OFFER_AMOUNT
+        );
+
+        vm.startPrank(taker1);
+        vm.deal(taker1, 5e15);
+
+        // 5e15 * 2000e18 = 10e18
+        uint256 amountOut = orderbook.contribute{value: 5e15}(
+            ethToTokenOfferId,
+            5e15,
+            quote
+        );
+        vm.stopPrank();
+
+        assertEq(amountOut, 10e18);
+
+        uint256 makerEthBalanceAfter = maker.balance;
+        uint256 takerOfferedTokenBalanceAfter = offeredToken.balanceOf(taker1);
+
+        assertEq(makerEthBalanceAfter, makerEthBalanceBefore + 5e15);
+        assertEq(
+            takerOfferedTokenBalanceAfter,
+            takerOfferedTokenBalanceBefore + amountOut
         );
     }
 
@@ -337,6 +376,38 @@ contract ContributeTests is TestSetup {
         assertEq(amountOut, tokenQuote - ((tokenQuote * 10) / 1000)); // 1% slippage applied
     }
 
+    function test_contribute_returnsExcessETH() public {
+        deal(taker1, 1 ether);
+
+        ethToTokenOfferId = _createAndReturnOffer(address(offeredToken), ETH);
+
+        uint256 makerEthBalanceBefore = maker.balance;
+        uint256 takerEthBalanceBefore = taker1.balance;
+
+        uint256 quote = settlementEngine.getAmountOut(
+            address(offeredToken),
+            ETH,
+            5e15,
+            OFFER_AMOUNT
+        );
+
+        vm.startPrank(taker1);
+
+        uint256 amountOut = orderbook.contribute{value: 10e15}(
+            ethToTokenOfferId,
+            10e15,
+            quote
+        );
+        vm.stopPrank();
+
+        assertEq(amountOut, 10e18);
+
+        uint256 takerEthBalanceAfter = taker1.balance;
+
+        // Taker sent 0.01 ETH, used 0.005 ETH, should get back 0.005 ETH
+        assertEq(takerEthBalanceAfter, takerEthBalanceBefore - 5e15);
+    }
+
     /*//////////////////////////////////////////////////////////////
                              NEGATIVE TESTS
     //////////////////////////////////////////////////////////////*/
@@ -461,6 +532,30 @@ contract ContributeTests is TestSetup {
         vm.expectRevert(Orderbook.Orderbook__SlippageExceeded.selector);
         // Call with normal quote which is now invalid due to price drop
         orderbook.contribute(offerId, CONTRIBUTE_AMOUNT, tokenQuote);
+        vm.stopPrank();
+    }
+
+    function test_contribute_RevertsInvalidContribution_ETH() public {
+        deal(taker1, 1 ether);
+
+        ethToTokenOfferId = _createAndReturnOffer(address(offeredToken), ETH);
+
+        uint256 quote = settlementEngine.getAmountOut(
+            address(offeredToken),
+            ETH,
+            5e15,
+            OFFER_AMOUNT
+        );
+
+        vm.startPrank(taker1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__InvalidContribution.selector,
+                5e14
+            )
+        );
+        orderbook.contribute{value: 5e14}(ethToTokenOfferId, 5e15, quote);
         vm.stopPrank();
     }
 }

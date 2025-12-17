@@ -16,6 +16,8 @@ import {
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
+import {console} from "forge-std/console.sol";
+
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
 /// TODO: Add slippage checks in contribute function.
 /// TODO: Add signature verification for off-chain order creation / contribution.
@@ -357,6 +359,12 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
             );
         }
 
+        if (offer.requestedToken == ETH_ADDRESS) {
+            if (msg.value < _amount) {
+                revert Orderbook__InvalidContribution(msg.value);
+            }
+        }
+
         offerStatusById[_offerId] = OfferStatus.InProgress;
 
         amountOut = settlementEngine.getAmountOut(
@@ -382,11 +390,30 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
 
             offerStatusById[_offerId] = OfferStatus.Filled;
 
-            IERC20(offer.requestedToken).safeTransferFrom(
-                msg.sender,
-                offer.maker,
-                requiredAmountIn
-            );
+            if (offer.requestedToken == ETH_ADDRESS) {
+                // return excess ETH to taker
+                uint256 excessEth = msg.value - requiredAmountIn;
+                if (excessEth > 0) {
+                    (bool refundSuccess, ) = msg.sender.call{value: excessEth}(
+                        ""
+                    );
+                    if (!refundSuccess) {
+                        revert Orderbook__ETHTransferFailed();
+                    }
+                }
+                (bool success, ) = offer.maker.call{value: requiredAmountIn}(
+                    ""
+                );
+                if (!success) {
+                    revert Orderbook__ETHTransferFailed();
+                }
+            } else {
+                IERC20(offer.requestedToken).safeTransferFrom(
+                    msg.sender,
+                    offer.maker,
+                    requiredAmountIn
+                );
+            }
 
             escrow.transferFunds(offer.offer.token, msg.sender, amountOut);
 
@@ -400,11 +427,18 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         } else {
             offer.remainingAmount -= amountOut;
 
-            IERC20(offer.requestedToken).safeTransferFrom(
-                msg.sender,
-                offer.maker,
-                _amount
-            );
+            if (offer.requestedToken == ETH_ADDRESS) {
+                (bool success, ) = offer.maker.call{value: _amount}("");
+                if (!success) {
+                    revert Orderbook__ETHTransferFailed();
+                }
+            } else {
+                IERC20(offer.requestedToken).safeTransferFrom(
+                    msg.sender,
+                    offer.maker,
+                    _amount
+                );
+            }
 
             escrow.transferFunds(offer.offer.token, msg.sender, amountOut);
 
