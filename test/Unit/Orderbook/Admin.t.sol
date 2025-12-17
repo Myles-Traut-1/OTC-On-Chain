@@ -52,27 +52,6 @@ contract AdminPrivilegesTest is TestSetup {
         );
     }
 
-    function test_PauseAndUnpause() public {
-        assertFalse(
-            orderbook.paused(),
-            "Contract should not be paused initially"
-        );
-
-        vm.prank(owner);
-        orderbook.pause();
-        assertTrue(
-            orderbook.paused(),
-            "Contract should be paused after pausing"
-        );
-
-        vm.prank(owner);
-        orderbook.unpause();
-        assertFalse(
-            orderbook.paused(),
-            "Contract should not be paused after unpausing"
-        );
-    }
-
     /******* NEGATIVE TESTS ********/
 
     function test_AddToken_Reverts_NonOwner() public {
@@ -149,5 +128,57 @@ contract AdminPrivilegesTest is TestSetup {
         );
         orderbook.removeToken(address(0));
         vm.stopPrank();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                 PAUSE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_PauseAndUnpause() public {
+        assertFalse(
+            orderbook.paused(),
+            "Contract should not be paused initially"
+        );
+
+        vm.prank(owner);
+        orderbook.pause();
+        assertTrue(
+            orderbook.paused(),
+            "Contract should be paused after pausing"
+        );
+
+        vm.prank(owner);
+        orderbook.unpause();
+        assertFalse(
+            orderbook.paused(),
+            "Contract should not be paused after unpausing"
+        );
+    }
+
+    /******* NEGATIVE TESTS ********/
+
+    function test_pauseReverts_NonOwner() public {
+        vm.prank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                maker
+            )
+        );
+        orderbook.pause();
+    }
+
+    function test_unPauseReverts_NonOwner() public {
+        vm.prank(owner);
+        orderbook.pause();
+
+        vm.prank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                maker
+            )
+        );
+        orderbook.unpause();
     }
 }

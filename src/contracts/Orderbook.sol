@@ -23,7 +23,6 @@ import {console} from "forge-std/console.sol";
 /// TODO: Add slippage checks in contribute function.
 /// TODO: Add signature verification for off-chain order creation / contribution.
 /// TODO: Add pricefeed validation when adding tokens.
-/// TODO: Add pausable functionality
 /// TODO: Add upgradeable functionality
 /// TODO: Add interfaces for all contracts
 
