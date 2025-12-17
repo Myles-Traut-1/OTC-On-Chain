@@ -370,8 +370,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         amountOut = settlementEngine.getAmountOut(
             offer.offer.token,
             offer.requestedToken,
-            _amount,
-            offer.offer.amount
+            _amount
         );
 
         uint256 minAmountOut = _quote - ((_quote * slippageBps) / SCALE);

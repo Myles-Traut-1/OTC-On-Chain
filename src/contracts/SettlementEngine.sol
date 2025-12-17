@@ -78,8 +78,7 @@ contract SettlementEngine is Ownable2Step {
     function getAmountOut(
         address _offeredToken,
         address _requestedToken,
-        uint256 _amountIn,
-        uint256 _offerAmount
+        uint256 _amountIn
     ) external view returns (uint256 amountOut) {
         // handle case for ETH as offered token
         if (_offeredToken == orderbook.ETH_ADDRESS()) {

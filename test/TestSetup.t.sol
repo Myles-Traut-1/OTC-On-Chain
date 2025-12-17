@@ -85,14 +85,12 @@ contract TestSetup is Test {
         tokenQuote = settlementEngine.getAmountOut(
             address(offeredToken),
             address(requestedToken),
-            CONTRIBUTE_AMOUNT,
-            OFFER_AMOUNT
+            CONTRIBUTE_AMOUNT
         );
         ethQuote = settlementEngine.getAmountOut(
             address(ETH),
             address(requestedToken),
-            CONTRIBUTE_AMOUNT,
-            OFFER_AMOUNT
+            CONTRIBUTE_AMOUNT
         );
     }
 

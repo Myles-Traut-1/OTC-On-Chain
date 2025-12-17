@@ -53,8 +53,7 @@ contract ContributeTests is TestSetup {
         uint256 expectedAmountOut = settlementEngine.getAmountOut(
             address(offeredToken),
             address(requestedToken),
-            CONTRIBUTE_AMOUNT,
-            OFFER_AMOUNT
+            CONTRIBUTE_AMOUNT
         );
 
         vm.startPrank(taker1);
@@ -119,8 +118,7 @@ contract ContributeTests is TestSetup {
         uint256 expectedAmountOut = settlementEngine.getAmountOut(
             address(ETH),
             address(requestedToken),
-            CONTRIBUTE_AMOUNT,
-            OFFER_AMOUNT
+            CONTRIBUTE_AMOUNT
         );
 
         vm.startPrank(taker1);
@@ -166,8 +164,7 @@ contract ContributeTests is TestSetup {
         uint256 quote = settlementEngine.getAmountOut(
             address(offeredToken),
             ETH,
-            5e15,
-            OFFER_AMOUNT
+            5e15
         );
 
         vm.startPrank(taker1);
@@ -387,8 +384,7 @@ contract ContributeTests is TestSetup {
         uint256 quote = settlementEngine.getAmountOut(
             address(offeredToken),
             ETH,
-            5e15,
-            OFFER_AMOUNT
+            5e15
         );
 
         vm.startPrank(taker1);
@@ -543,8 +539,7 @@ contract ContributeTests is TestSetup {
         uint256 quote = settlementEngine.getAmountOut(
             address(offeredToken),
             ETH,
-            5e15,
-            OFFER_AMOUNT
+            5e15
         );
 
         vm.startPrank(taker1);

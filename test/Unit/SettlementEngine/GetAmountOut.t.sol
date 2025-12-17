@@ -34,8 +34,7 @@ contract GetAmountOutTest is TestSetup {
         uint256 amountOut = settlementEngine.getAmountOut(
             ETH,
             address(requestedToken),
-            1000e18,
-            1e18
+            1000e18
         );
 
         assertEq(amountOut, expectedAmountOut);
@@ -48,8 +47,7 @@ contract GetAmountOutTest is TestSetup {
         uint256 amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
             ETH,
-            AMOUNT_IN,
-            2000e18
+            AMOUNT_IN
         );
 
         assertEq(amountOut, expectedAmountOut);
@@ -65,8 +63,7 @@ contract GetAmountOutTest is TestSetup {
         uint256 amountOut = settlementEngine.getAmountOut(
             address(requestedToken),
             address(offeredToken),
-            AMOUNT_IN / 2,
-            1e18
+            AMOUNT_IN / 2
         );
 
         assertEq(amountOut, expectedAmountOut);
@@ -76,8 +73,7 @@ contract GetAmountOutTest is TestSetup {
         amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
             address(requestedToken),
-            AMOUNT_IN,
-            1e18
+            AMOUNT_IN
         );
 
         assertEq(amountOut, expectedAmountOut);
@@ -87,8 +83,7 @@ contract GetAmountOutTest is TestSetup {
         amountOut = settlementEngine.getAmountOut(
             address(offeredToken),
             address(usdc),
-            AMOUNT_IN,
-            1e18
+            AMOUNT_IN
         );
 
         assertEq(amountOut, expectedAmountOut);
@@ -98,8 +93,7 @@ contract GetAmountOutTest is TestSetup {
         amountOut = settlementEngine.getAmountOut(
             address(usdc),
             address(requestedToken),
-            AMOUNT_IN,
-            1e18
+            AMOUNT_IN
         );
 
         assertEq(amountOut, expectedAmountOut);
@@ -112,8 +106,7 @@ contract GetAmountOutTest is TestSetup {
         uint256 amountOut = settlementEngine.getAmountOut(
             ETH,
             address(usdc),
-            2000e18,
-            1e18
+            2000e18
         );
 
         assertEq(amountOut, 1e18);
@@ -126,8 +119,7 @@ contract GetAmountOutTest is TestSetup {
         uint256 amountOut = settlementEngine.getAmountOut(
             address(usdc),
             ETH,
-            AMOUNT_IN,
-            1e18
+            AMOUNT_IN
         );
 
         assertEq(amountOut, 2000e6);
