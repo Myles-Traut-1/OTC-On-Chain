@@ -7,8 +7,6 @@ import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract ContributeTests is TestSetup {
     bytes32 public tokenOfferId;
     bytes32 public ethOfferId;
