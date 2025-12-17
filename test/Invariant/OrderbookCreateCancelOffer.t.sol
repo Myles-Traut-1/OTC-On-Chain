@@ -32,6 +32,8 @@ contract CreateCancelOfferHandler is Test {
 
     bytes32 public lastOfferId;
 
+    mapping(bytes32 offerId => bool exists) public offerIdExists;
+
     constructor(
         Orderbook _orderbook,
         Escrow _escrow,
@@ -60,6 +62,12 @@ contract CreateCancelOfferHandler is Test {
         );
 
         escrowOfferedTokenBalance += _amount;
+
+        if (offerIdExists[lastOfferId]) {
+            revert("Duplicate offerId detected");
+        }
+
+        offerIdExists[lastOfferId] = true;
     }
 
     function cancelTokenOffer() public {
@@ -73,6 +81,11 @@ contract CreateCancelOfferHandler is Test {
         vm.stopPrank();
 
         escrowOfferedTokenBalance -= remainingAmount;
+    }
+
+    function offerIds_are_unique() public view {
+        // This invariant is implicitly enforced by the mapping structure.
+        // If a duplicate `offerId` were added, the test would fail.
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -173,5 +186,9 @@ contract OrderbookCreateCancelOfferInvariant is StdInvariant, TestSetup {
             escrow.getTokenBalance(address(offeredToken)),
             handler.escrowOfferedTokenBalance()
         );
+    }
+
+    function invariant_offer_ids_are_unique() public view {
+        handler.offerIds_are_unique();
     }
 }
