@@ -5,6 +5,7 @@ import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -551,6 +552,19 @@ contract ContributeTests is TestSetup {
             )
         );
         orderbook.contribute{value: 5e14}(ethToTokenOfferId, 5e15, quote);
+        vm.stopPrank();
+    }
+
+    function test_contributeRevertsWhenPaused() public {
+        vm.prank(owner);
+        orderbook.pause();
+
+        vm.startPrank(taker1);
+        requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
+        vm.expectRevert(
+            abi.encodeWithSelector(Pausable.EnforcedPause.selector)
+        );
+        orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
     }
 }

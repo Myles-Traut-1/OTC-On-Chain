@@ -12,6 +12,7 @@ import {
     Ownable2Step,
     Ownable
 } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
@@ -26,7 +27,7 @@ import {console} from "forge-std/console.sol";
 /// TODO: Add upgradeable functionality
 /// TODO: Add interfaces for all contracts
 
-contract Orderbook is ReentrancyGuard, Ownable2Step {
+contract Orderbook is ReentrancyGuard, Ownable2Step, Pausable {
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -199,6 +200,14 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         emit TokenRemoved(_token);
     }
 
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     /*//////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -211,6 +220,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         external
         validateOffer(_offer, _requestedToken, _constraints)
         nonReentrant
+        whenNotPaused
         returns (bytes32 offerId)
     {
         offerId = _generateOrderId(
@@ -246,6 +256,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         payable
         validateOffer(_offer, _requestedToken, _constraints)
         nonReentrant
+        whenNotPaused
         returns (bytes32 offerId)
     {
         if (msg.value != _offer.amount) {
@@ -313,7 +324,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
     function updateConstraints(
         bytes32 _offerId,
         uint256 _newConstraints
-    ) external {
+    ) external whenNotPaused {
         Offer storage offer = offers[_offerId];
         OfferStatus status = offerStatusById[_offerId];
 
@@ -335,7 +346,7 @@ contract Orderbook is ReentrancyGuard, Ownable2Step {
         bytes32 _offerId,
         uint256 _amount,
         uint256 _quote
-    ) public payable returns (uint256 amountOut) {
+    ) public payable whenNotPaused returns (uint256 amountOut) {
         if (_amount == 0) {
             revert Orderbook__InvalidContribution(0);
         }

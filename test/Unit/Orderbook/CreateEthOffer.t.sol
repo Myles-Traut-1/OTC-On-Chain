@@ -4,6 +4,8 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+
 contract CreateEthOfferTest is TestSetup {
     /*//////////////////////////////////////////////////////////////
                             STATE UPDATES
@@ -351,6 +353,36 @@ contract CreateEthOfferTest is TestSetup {
             address(requestedToken),
             constraints
         );
+        vm.stopPrank();
+    }
+
+    function test_CreateEthOffer_RevertsWhenPaused() public {
+        vm.startPrank(owner);
+        orderbook.pause();
+        vm.stopPrank();
+
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                ETH,
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Pausable.EnforcedPause.selector)
+        );
+        orderbook.createEthOffer{value: OFFER_AMOUNT}(
+            offer,
+            address(requestedToken),
+            constraints
+        );
+
         vm.stopPrank();
     }
 }

@@ -52,6 +52,27 @@ contract AdminPrivilegesTest is TestSetup {
         );
     }
 
+    function test_PauseAndUnpause() public {
+        assertFalse(
+            orderbook.paused(),
+            "Contract should not be paused initially"
+        );
+
+        vm.prank(owner);
+        orderbook.pause();
+        assertTrue(
+            orderbook.paused(),
+            "Contract should be paused after pausing"
+        );
+
+        vm.prank(owner);
+        orderbook.unpause();
+        assertFalse(
+            orderbook.paused(),
+            "Contract should not be paused after unpausing"
+        );
+    }
+
     /******* NEGATIVE TESTS ********/
 
     function test_AddToken_Reverts_NonOwner() public {

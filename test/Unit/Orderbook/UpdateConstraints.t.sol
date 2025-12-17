@@ -4,6 +4,8 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+
 contract UpdateConstraintsTest is TestSetup {
     uint256 public newMaxSlippageBps = MAX_SLIPPAGE_BPS / 2;
     uint256 public newValidFrom = validFrom + 100;
@@ -165,5 +167,30 @@ contract UpdateConstraintsTest is TestSetup {
             )
         );
         orderbook.updateConstraints(offerId, invalidConstraints);
+    }
+
+    function test_UpdateConstraintsRevertsWhenPaused() public {
+        bytes32 offerId = _createAndReturnOffer(
+            address(offeredToken),
+            address(requestedToken)
+        );
+
+        (, uint256 newConstraints) = _generateOfferAmountsAndConstraints(
+            address(offeredToken),
+            OFFER_AMOUNT,
+            newMaxSlippageBps,
+            newValidFrom,
+            newValidUntil
+        );
+
+        vm.prank(owner);
+        orderbook.pause();
+
+        vm.startPrank(maker);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Pausable.EnforcedPause.selector)
+        );
+        orderbook.updateConstraints(offerId, newConstraints);
     }
 }

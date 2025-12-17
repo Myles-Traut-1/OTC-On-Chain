@@ -4,6 +4,8 @@ pragma solidity 0.8.25;
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+
 contract CreateTokenOfferTest is TestSetup {
     /*//////////////////////////////////////////////////////////////
                             STATE UPDATES
@@ -285,6 +287,32 @@ contract CreateTokenOfferTest is TestSetup {
                 Orderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_UNTIL"
             )
+        );
+        orderbook.createTokenOffer(offer, address(requestedToken), constraints);
+        vm.stopPrank();
+    }
+
+    function test_CreateTokenOfferRevertsWhenPaused() public {
+        vm.startPrank(owner);
+        orderbook.pause();
+        vm.stopPrank();
+
+        (
+            Orderbook.TokenAmount memory offer,
+            uint256 constraints
+        ) = _generateOfferAmountsAndConstraints(
+                address(offeredToken),
+                OFFER_AMOUNT,
+                MAX_SLIPPAGE_BPS,
+                validFrom,
+                validUntil
+            );
+
+        vm.startPrank(maker);
+        offeredToken.approve(address(orderbook), OFFER_AMOUNT);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Pausable.EnforcedPause.selector)
         );
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
