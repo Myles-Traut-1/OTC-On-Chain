@@ -107,9 +107,7 @@ contract DecreaseBalanceTest is TestSetup {
             address(escrowHarnessImplementation),
             ""
         );
-        EscrowHarness escrowHarness = EscrowHarness(
-            payable(address(escrowHarnessProxy))
-        );
+        escrowHarness = EscrowHarness(payable(address(escrowHarnessProxy)));
         escrowHarness.initialize();
         return escrowHarness;
     }

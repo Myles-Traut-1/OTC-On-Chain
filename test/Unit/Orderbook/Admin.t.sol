@@ -7,6 +7,7 @@ import {Orderbook} from "../../../src/contracts/Orderbook.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract AdminPrivilegesTest is TestSetup {
     ERC20Mock public newToken;
@@ -52,6 +53,25 @@ contract AdminPrivilegesTest is TestSetup {
         );
     }
 
+    function test_AddToken_EthSetsPricefeedToZero() public {
+        // Deploy new orderbook to add fresh ETH token
+        Orderbook newOrderbook = deployer.deployOrderbook(owner);
+
+        vm.startPrank(owner);
+        newOrderbook.initialize(address(settlementEngine), address(escrow));
+
+        newOrderbook.addToken(ETH, address(0));
+        vm.stopPrank();
+
+        (address priceFeed, bool isSupported) = newOrderbook.tokenInfo(ETH);
+        assertTrue(isSupported, "ETH should be supported after being added");
+        assertEq(
+            priceFeed,
+            address(0),
+            "Price feed for ETH should be address zero"
+        );
+    }
+
     /******* NEGATIVE TESTS ********/
 
     function test_AddToken_Reverts_NonOwner() public {
@@ -76,6 +96,20 @@ contract AdminPrivilegesTest is TestSetup {
             abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
         );
         orderbook.addToken(address(newToken), address(0));
+        vm.stopPrank();
+    }
+
+    function test_AddToken_RevertsIfAlreadyAdded() public {
+        vm.startPrank(owner);
+        orderbook.addToken(address(newToken), address(offeredTokenEthFeed));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Orderbook.Orderbook__TokenAlreadyAdded.selector,
+                address(newToken)
+            )
+        );
+        orderbook.addToken(address(newToken), address(offeredTokenEthFeed));
         vm.stopPrank();
     }
 
@@ -186,10 +220,10 @@ contract AdminPrivilegesTest is TestSetup {
                                 UPGRADE
     //////////////////////////////////////////////////////////////*/
 
-    function test_UpgradeOrderbook() public {
+    function test_UpgradeOrderbook() public pauseContract {
         OrderbookV2 newImplementation = new OrderbookV2();
 
-        vm.prank(owner);
+        vm.startPrank(owner);
         orderbook.upgradeToAndCall(address(newImplementation), "");
 
         assertEq(
@@ -201,7 +235,7 @@ contract AdminPrivilegesTest is TestSetup {
 
     /******* NEGATIVE TESTS ********/
 
-    function test_UpgradeReverts_NonOwner() public {
+    function test_UpgradeReverts_NonOwner() public pauseContract {
         OrderbookV2 newImplementation = new OrderbookV2();
 
         vm.prank(maker);
@@ -214,12 +248,28 @@ contract AdminPrivilegesTest is TestSetup {
         orderbook.upgradeToAndCall(address(newImplementation), "");
     }
 
-    function test_UpgradeReverts_ZeroAddress() public {
+    function test_UpgradeReverts_ZeroAddress() public pauseContract {
         vm.prank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
         );
         orderbook.upgradeToAndCall(address(0), "");
+    }
+
+    function test_UpgradeRevert_WhenNotPaused() public {
+        OrderbookV2 newImplementation = new OrderbookV2();
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(Pausable.ExpectedPause.selector)
+        );
+        orderbook.upgradeToAndCall(address(newImplementation), "");
+    }
+
+    modifier pauseContract() {
+        vm.prank(owner);
+        orderbook.pause();
+        _;
     }
 }
 

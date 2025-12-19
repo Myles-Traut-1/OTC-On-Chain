@@ -25,7 +25,6 @@ import {SettlementEngine} from "./SettlementEngine.sol";
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
 /// TODO: Add signature verification for off-chain order creation / contribution.
 /// TODO: Add pricefeed validation when adding tokens.
-/// TODO: Add upgradeable functionality
 /// TODO: Add interfaces for all contracts
 
 contract Orderbook is
@@ -53,6 +52,7 @@ contract Orderbook is
     error Orderbook__InvalidContribution(uint256 amount);
     error Orderbook__SlippageExceeded();
     error Orderbook__UnsupportedToken(address token);
+    error Orderbook__TokenAlreadyAdded(address token);
     error Orderbook__SameTokens();
 
     /*//////////////////////////////////////////////////////////////
@@ -137,11 +137,11 @@ contract Orderbook is
     /// @dev Constraints are packed into a single uint256 for gas efficiency.
     /// @dev Constraintsts = uint64 validFrom | uint64 validUntil | uint128 maxSlippageBps
     struct Offer {
-        address maker; // Maker configuration
+        address maker; // Maker address
         TokenAmount offer; // Asset/amount maker is giving
         address requestedToken; // Asset maker expects
         uint256 constraints; // Packed constraints
-        uint256 remainingAmount; // Fill and timing controls
+        uint256 remainingAmount; // Remaining amount to be filled
     }
 
     /// @notice Offer Tracking.
@@ -197,11 +197,14 @@ contract Orderbook is
                             ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// TODO Add Price Feed Validation
+    /// TODO Add Price Feed Validation to ensure feed matches token
     function addToken(
         address _token,
         address _dataFeed
     ) external onlyOwner checkZeroAddress(_token) {
+        if (tokenInfo[_token].isSupported) {
+            revert Orderbook__TokenAlreadyAdded(_token);
+        }
         if (_token == ETH_ADDRESS) {
             tokenInfo[_token] = Token({
                 dataFeed: address(0),
@@ -209,9 +212,8 @@ contract Orderbook is
             });
         } else {
             _checkZeroAddress(_dataFeed);
+            tokenInfo[_token] = Token({dataFeed: _dataFeed, isSupported: true});
         }
-
-        tokenInfo[_token] = Token({dataFeed: _dataFeed, isSupported: true});
         emit TokenAdded(_token, _dataFeed);
     }
 
@@ -233,7 +235,13 @@ contract Orderbook is
 
     function _authorizeUpgrade(
         address _newImplementation
-    ) internal override onlyOwner checkZeroAddress(_newImplementation) {}
+    )
+        internal
+        override
+        onlyOwner
+        checkZeroAddress(_newImplementation)
+        whenPaused
+    {}
 
     /*//////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS

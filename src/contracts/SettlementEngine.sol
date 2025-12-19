@@ -6,6 +6,9 @@ import {
     OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {
+    PausableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {
     UUPSUpgradeable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {
@@ -20,9 +23,12 @@ import {
 import {Orderbook} from "./Orderbook.sol";
 
 /// TODO: Add redundant price feeds
-/// TODO: Add support for TWAP oracles
-/// TODO: Add pausable functionality
-contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
+/// TODO: Add support for fallback TWAP oracles
+contract SettlementEngine is
+    Ownable2StepUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
     using Math for uint256;
 
     /*//////////////////////////////////////////////////////////////
@@ -30,11 +36,16 @@ contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
     //////////////////////////////////////////////////////////////*/
     error SettlementEngine__AddressZero();
     error SettlementEngine__PriceFeedStale();
+    error SettlementEngine__ThresholdZero();
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
     event OrderbookSet(address indexed orderbook);
+    event StalenessThresholdSet(
+        uint256 previousThreshold,
+        uint256 newThreshold
+    );
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
@@ -51,7 +62,7 @@ contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
     Orderbook public orderbook;
 
     uint256 public constant PRECISION = 1e18;
-    uint256 public STALENESS_THRESHOLD = 1 hours;
+    uint256 public stalenessThreshold;
 
     uint256[50] private __gap;
 
@@ -70,7 +81,10 @@ contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
 
     function initialize() public initializer {
         __Ownable_init(msg.sender);
+        __Pausable_init();
         __UUPSUpgradeable_init();
+
+        stalenessThreshold = 1 hours;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -85,9 +99,35 @@ contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
         emit OrderbookSet(_orderbook);
     }
 
+    function setStalenessThreshold(
+        uint256 _stalenessThreshold
+    ) external onlyOwner {
+        if (_stalenessThreshold == 0) {
+            revert SettlementEngine__ThresholdZero();
+        }
+        uint256 previousThreshold = stalenessThreshold;
+        stalenessThreshold = _stalenessThreshold;
+
+        emit StalenessThresholdSet(previousThreshold, _stalenessThreshold);
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     function _authorizeUpgrade(
         address _newImplementation
-    ) internal override onlyOwner checkZeroAddress(_newImplementation) {}
+    )
+        internal
+        override
+        onlyOwner
+        checkZeroAddress(_newImplementation)
+        whenPaused
+    {}
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
@@ -207,9 +247,8 @@ contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
         return (priceFeedDecimals, uint256(price));
     }
 
-    /// TODO TEST!!
     function _validatePriceFeedData(uint256 _updatedAt) internal view {
-        if (block.timestamp - _updatedAt > STALENESS_THRESHOLD) {
+        if (block.timestamp - _updatedAt > stalenessThreshold) {
             revert SettlementEngine__PriceFeedStale();
         }
     }

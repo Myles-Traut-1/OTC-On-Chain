@@ -10,16 +10,21 @@ import {
     Ownable2StepUpgradeable,
     OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-
+import {
+    PausableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {
     UUPSUpgradeable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {Orderbook} from "./Orderbook.sol";
 
-/// TODO: Add pausable functionality
 /// TODO: Add emergencyWithdraw functionality with timelock
-contract Escrow is Ownable2StepUpgradeable, UUPSUpgradeable {
+contract Escrow is
+    Ownable2StepUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -88,6 +93,7 @@ contract Escrow is Ownable2StepUpgradeable, UUPSUpgradeable {
 
     function initialize() public initializer {
         __Ownable_init(msg.sender);
+        __Pausable_init();
         __UUPSUpgradeable_init();
     }
 
@@ -103,9 +109,23 @@ contract Escrow is Ownable2StepUpgradeable, UUPSUpgradeable {
         emit OrderbookSet(_orderbook);
     }
 
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
     function _authorizeUpgrade(
         address _newImplementation
-    ) internal override onlyOwner checkZeroAddress(_newImplementation) {}
+    )
+        internal
+        override
+        onlyOwner
+        checkZeroAddress(_newImplementation)
+        whenPaused
+    {}
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS

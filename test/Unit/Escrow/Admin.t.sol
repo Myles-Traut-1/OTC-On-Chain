@@ -5,8 +5,9 @@ import {TestSetup} from "../../TestSetup.t.sol";
 import {Escrow} from "../../../src/contracts/Escrow.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract AdminPrivalgesTest is TestSetup {
+contract AdminPrivilegesTest is TestSetup {
     address newOrderbook = makeAddr("newOrderbook");
     address nonOwner = makeAddr("nonOwner");
 
@@ -47,10 +48,56 @@ contract AdminPrivalgesTest is TestSetup {
     }
 
     /*//////////////////////////////////////////////////////////////
+                                 PAUSE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_PauseAndUnpause() public {
+        assertFalse(escrow.paused(), "Contract should not be paused initially");
+
+        vm.prank(owner);
+        escrow.pause();
+        assertTrue(escrow.paused(), "Contract should be paused after pausing");
+
+        vm.prank(owner);
+        escrow.unpause();
+        assertFalse(
+            escrow.paused(),
+            "Contract should not be paused after unpausing"
+        );
+    }
+
+    /******* NEGATIVE TESTS ********/
+
+    function test_pauseReverts_NonOwner() public {
+        vm.prank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                maker
+            )
+        );
+        escrow.pause();
+    }
+
+    function test_unPauseReverts_NonOwner() public {
+        vm.prank(owner);
+        escrow.pause();
+
+        vm.prank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                maker
+            )
+        );
+        escrow.unpause();
+    }
+
+    /*//////////////////////////////////////////////////////////////
                                 UPGRADE
     //////////////////////////////////////////////////////////////*/
 
-    function test_UpgradeEscrow() public {
+    function test_UpgradeEscrow() public pauseContract {
         EscrowV2 newImplementation = new EscrowV2();
 
         vm.prank(owner);
@@ -65,7 +112,7 @@ contract AdminPrivalgesTest is TestSetup {
 
     /******* NEGATIVE TESTS ********/
 
-    function test_UpgradeReverts_NonOwner() public {
+    function test_UpgradeReverts_NonOwner() public pauseContract {
         EscrowV2 newImplementation = new EscrowV2();
 
         vm.prank(maker);
@@ -78,12 +125,28 @@ contract AdminPrivalgesTest is TestSetup {
         escrow.upgradeToAndCall(address(newImplementation), "");
     }
 
-    function test_UpgradeReverts_ZeroAddress() public {
+    function test_UpgradeReverts_ZeroAddress() public pauseContract {
         vm.prank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(Escrow.Escrow__AddressZero.selector)
         );
         escrow.upgradeToAndCall(address(0), "");
+    }
+
+    function test_Upgrade_Reverts_WhenNotPaused() public {
+        EscrowV2 newImplementation = new EscrowV2();
+
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(Pausable.ExpectedPause.selector)
+        );
+        escrow.upgradeToAndCall(address(newImplementation), "");
+    }
+
+    modifier pauseContract() {
+        vm.prank(owner);
+        escrow.pause();
+        _;
     }
 }
 
