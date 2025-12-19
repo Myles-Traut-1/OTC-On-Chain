@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
-import {Escrow} from "../../../src/contracts/Escrow.sol";
+import {IEscrow} from "../../../src/interfaces/IEscrow.sol";
 
 contract IncreaseBalanceTest is TestSetup {
     /*//////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ contract IncreaseBalanceTest is TestSetup {
 
     function test_Reverts_IncreaseBalance_OnlyOrderbook() public {
         vm.expectRevert(
-            abi.encodeWithSelector(Escrow.Escrow__Unauthorized.selector)
+            abi.encodeWithSelector(IEscrow.Escrow__Unauthorized.selector)
         );
         escrow.increaseBalance(ETH, OFFER_AMOUNT);
     }

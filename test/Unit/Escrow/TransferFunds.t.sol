@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
-import {Escrow} from "../../../src/contracts/Escrow.sol";
+import {IEscrow} from "../../../src/interfaces/IEscrow.sol";
 
 contract TransferFundsTest is TestSetup {
     address public recipient = makeAddr("recipient");
@@ -41,7 +41,7 @@ contract TransferFundsTest is TestSetup {
         assertEq(maker.balance, INITIAL_MAKER_BALANCE);
         vm.prank(address(orderbook));
         vm.expectEmit(true, true, false, true);
-        emit Escrow.FundsTransferred(ETH, maker, OFFER_AMOUNT);
+        emit IEscrow.FundsTransferred(ETH, maker, OFFER_AMOUNT);
         escrow.transferFunds(ETH, maker, OFFER_AMOUNT);
         assertEq(maker.balance, INITIAL_MAKER_BALANCE + OFFER_AMOUNT);
         assertEq(escrow.getTokenBalance(ETH), 0);
@@ -51,7 +51,7 @@ contract TransferFundsTest is TestSetup {
         assertEq(offeredToken.balanceOf(maker), INITIAL_MAKER_BALANCE);
         vm.prank(address(orderbook));
         vm.expectEmit(true, true, false, true);
-        emit Escrow.FundsTransferred(
+        emit IEscrow.FundsTransferred(
             address(offeredToken),
             maker,
             OFFER_AMOUNT
@@ -70,7 +70,7 @@ contract TransferFundsTest is TestSetup {
 
     function test_reverts_TransferFunds_OnlyOrderbook() public {
         vm.expectRevert(
-            abi.encodeWithSelector(Escrow.Escrow__Unauthorized.selector)
+            abi.encodeWithSelector(IEscrow.Escrow__Unauthorized.selector)
         );
         escrow.transferFunds(ETH, recipient, OFFER_AMOUNT);
     }
@@ -81,7 +81,7 @@ contract TransferFundsTest is TestSetup {
 
         vm.prank(address(orderbook));
         vm.expectRevert(
-            abi.encodeWithSelector(Escrow.Escrow__EthTransferFailed.selector)
+            abi.encodeWithSelector(IEscrow.Escrow__EthTransferFailed.selector)
         );
         escrow.transferFunds(ETH, noEthReceiver, OFFER_AMOUNT);
     }

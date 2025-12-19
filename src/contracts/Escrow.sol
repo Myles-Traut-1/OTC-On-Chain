@@ -17,34 +17,17 @@ import {
     UUPSUpgradeable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import {IEscrow} from "../interfaces/IEscrow.sol";
 import {Orderbook} from "./Orderbook.sol";
 
 /// TODO: Add emergencyWithdraw functionality with timelock
 contract Escrow is
+    IEscrow,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
     UUPSUpgradeable
 {
     using SafeERC20 for IERC20;
-
-    /*//////////////////////////////////////////////////////////////
-                                 ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    error Escrow__AddressZero();
-    error Escrow__EthTransferFailed();
-    error Escrow__Unauthorized();
-
-    /*//////////////////////////////////////////////////////////////
-                                 EVENTS
-    //////////////////////////////////////////////////////////////*/
-
-    event OrderbookSet(address indexed orderbook);
-    event FundsTransferred(
-        address indexed token,
-        address indexed to,
-        uint256 amount
-    );
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS

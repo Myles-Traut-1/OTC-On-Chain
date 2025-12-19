@@ -2,6 +2,8 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
+
+import {IEscrow} from "../../../src/interfaces/IEscrow.sol";
 import {Escrow} from "../../../src/contracts/Escrow.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -20,7 +22,7 @@ contract AdminPrivilegesTest is TestSetup {
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, true);
-        emit Escrow.OrderbookSet(newOrderbook);
+        emit IEscrow.OrderbookSet(newOrderbook);
         escrow.setOrderbook(newOrderbook);
 
         assertEq(address(escrow.orderbook()), newOrderbook);
@@ -31,7 +33,7 @@ contract AdminPrivilegesTest is TestSetup {
     function test_SetOrderBook_AddressZero() public {
         vm.startPrank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(Escrow.Escrow__AddressZero.selector)
+            abi.encodeWithSelector(IEscrow.Escrow__AddressZero.selector)
         );
         escrow.setOrderbook(address(0));
     }
@@ -128,7 +130,7 @@ contract AdminPrivilegesTest is TestSetup {
     function test_UpgradeReverts_ZeroAddress() public pauseContract {
         vm.prank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(Escrow.Escrow__AddressZero.selector)
+            abi.encodeWithSelector(IEscrow.Escrow__AddressZero.selector)
         );
         escrow.upgradeToAndCall(address(0), "");
     }
