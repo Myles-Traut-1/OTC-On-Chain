@@ -10,25 +10,20 @@ Phase 1:
 
 - `OrderBook` Makers post a bond to deter spam, and takers submit contributions for atomic fills.
 - `Escrow` custodializes assets during order execution.
-- `Settlement` is responsible for amount calculations
+- `Settlement Engine` is responsible for amount calculations
 
 Phase 2:
 - Smart Contract Wallet integration via EIP-7702 with Paymaster for free contributions
 
 ## Order Lifecycle
 
-1. Maker registers an instrument template defining token pair, settlement window, and collateral requirements.
+1. Maker registers an offer defining a token pair, total offer amount and settlement window.
 2. Funds move into escrow for immediate settlement.
 3. Takers contribute requested tokens to offers until fulfilment
-5. Contributions and Creations emit events for accounting push order identifiers to a subgraph.
+5. Contributions and Creations emit events for accounting and tracking via subgraph.
 
 ## Governance & Upgradeability
 
 - Core modules run behind a  UUPS proxy pattern with timelocked governance.
 - A governance DAO should manage parameter updates, whitelist and blacklist entries.
 - A circuit breaker allows emergency pause via multisig authorization followed by DAO ratification.
-
-## Deployment & Operations
-
-- Deploy core contracts on Ethereum L1 for security, extending to L2 rollups (Arbitrum, Base) through shared governance when lower fees are needed (V2).
-- Use Chainlink CCIP or LayerZero for cross-chain settlement while keeping escrow logic anchored on the primary chain.
