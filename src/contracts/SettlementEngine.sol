@@ -2,9 +2,12 @@
 pragma solidity 0.8.25;
 
 import {
-    Ownable2Step,
-    Ownable
-} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+    Ownable2StepUpgradeable,
+    OwnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {
+    UUPSUpgradeable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {
     IERC20Metadata
 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -19,9 +22,7 @@ import {Orderbook} from "./Orderbook.sol";
 /// TODO: Add redundant price feeds
 /// TODO: Add support for TWAP oracles
 /// TODO: Add pausable functionality
-/// TODO: Add upgradeable functionality
-/// TODO: Add emergencyWithdraw functionality with timelock
-contract SettlementEngine is Ownable2Step {
+contract SettlementEngine is Ownable2StepUpgradeable, UUPSUpgradeable {
     using Math for uint256;
 
     /*//////////////////////////////////////////////////////////////
@@ -52,11 +53,25 @@ contract SettlementEngine is Ownable2Step {
     uint256 public constant PRECISION = 1e18;
     uint256 public STALENESS_THRESHOLD = 1 hours;
 
+    uint256[50] private __gap;
+
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor() Ownable(msg.sender) {}
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                  INIT
+    //////////////////////////////////////////////////////////////*/
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
 
     /*//////////////////////////////////////////////////////////////
                             ADMIN FUNCTIONS
@@ -69,6 +84,10 @@ contract SettlementEngine is Ownable2Step {
 
         emit OrderbookSet(_orderbook);
     }
+
+    function _authorizeUpgrade(
+        address _newImplementation
+    ) internal override onlyOwner checkZeroAddress(_newImplementation) {}
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS

@@ -167,6 +167,10 @@ contract Orderbook is
         _disableInitializers();
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                  INIT
+    //////////////////////////////////////////////////////////////*/
+
     function initialize(
         address _settlementEngine,
         address _escrow

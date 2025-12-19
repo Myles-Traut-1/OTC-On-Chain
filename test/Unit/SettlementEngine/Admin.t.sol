@@ -47,4 +47,51 @@ contract AdminPrivalgesTest is TestSetup {
         );
         settlementEngine.setOrderbook(newOrderbook);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                UPGRADE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_UpgradeSettlementEngine() public {
+        SettlementEngineV2 newImplementation = new SettlementEngineV2();
+
+        vm.prank(owner);
+        settlementEngine.upgradeToAndCall(address(newImplementation), "");
+        assertEq(
+            SettlementEngineV2(address(settlementEngine)).version(),
+            "v2",
+            "Contract should be upgraded to new implementation"
+        );
+    }
+
+    /******* NEGATIVE TESTS ********/
+
+    function test_UpgradeReverts_NonOwner() public {
+        SettlementEngineV2 newImplementation = new SettlementEngineV2();
+
+        vm.prank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                maker
+            )
+        );
+        settlementEngine.upgradeToAndCall(address(newImplementation), "");
+    }
+
+    function test_UpgradeReverts_ZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                SettlementEngine.SettlementEngine__AddressZero.selector
+            )
+        );
+        settlementEngine.upgradeToAndCall(address(0), "");
+    }
+}
+
+contract SettlementEngineV2 is SettlementEngine {
+    function version() external pure returns (string memory) {
+        return "v2";
+    }
 }

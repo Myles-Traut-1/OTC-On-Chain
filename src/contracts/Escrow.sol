@@ -18,7 +18,7 @@ import {
 import {Orderbook} from "./Orderbook.sol";
 
 /// TODO: Add pausable functionality
-/// TODO: Add upgradeable functionality
+/// TODO: Add emergencyWithdraw functionality with timelock
 contract Escrow is Ownable2StepUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
