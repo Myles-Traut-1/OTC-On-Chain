@@ -1,25 +1,21 @@
 // SPDX-License-Identifier: MIT
+pragma solidity 0.8.25;
 
-pragma solidity ^0.8.20;
-
-interface IEscrow {
+interface ISettlementEngine {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    error Escrow__AddressZero();
-    error Escrow__EthTransferFailed();
-    error Escrow__Unauthorized();
+    error SettlementEngine__AddressZero();
+    error SettlementEngine__PriceFeedStale();
+    error SettlementEngine__ThresholdZero();
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
-
     event OrderbookSet(address indexed orderbook);
-    event FundsTransferred(
-        address indexed token,
-        address indexed to,
-        uint256 amount
+    event StalenessThresholdSet(
+        uint256 previousThreshold,
+        uint256 newThreshold
     );
 
     /*//////////////////////////////////////////////////////////////
@@ -27,26 +23,17 @@ interface IEscrow {
     //////////////////////////////////////////////////////////////*/
 
     function setOrderbook(address _orderbook) external;
-
+    function setStalenessThreshold(uint256 _stalenessThreshold) external;
     function pause() external;
-
     function unpause() external;
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function increaseBalance(address _token, uint256 _amount) external;
-
-    function transferFunds(
-        address _token,
-        address _to,
-        uint256 _amount
-    ) external;
-
-    /*//////////////////////////////////////////////////////////////
-                             VIEW FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    function getTokenBalance(address _token) external view returns (uint256);
+    function getAmountOut(
+        address _offeredToken,
+        address _requestedToken,
+        uint256 _amountIn
+    ) external view returns (uint256 amountOut);
 }

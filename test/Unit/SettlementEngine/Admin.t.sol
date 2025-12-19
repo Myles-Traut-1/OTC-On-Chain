@@ -2,6 +2,8 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
+
+import {ISettlementEngine} from "../../../src/interfaces/ISettlementEngine.sol";
 import {SettlementEngine} from "../../../src/contracts/SettlementEngine.sol";
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -20,7 +22,7 @@ contract AdminPrivilegesTest is TestSetup {
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, true);
-        emit SettlementEngine.OrderbookSet(newOrderbook);
+        emit ISettlementEngine.OrderbookSet(newOrderbook);
         settlementEngine.setOrderbook(newOrderbook);
 
         assertEq(address(settlementEngine.orderbook()), newOrderbook);
@@ -32,7 +34,7 @@ contract AdminPrivilegesTest is TestSetup {
         vm.startPrank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementEngine.SettlementEngine__AddressZero.selector
+                ISettlementEngine.SettlementEngine__AddressZero.selector
             )
         );
         settlementEngine.setOrderbook(address(0));
@@ -63,7 +65,7 @@ contract AdminPrivilegesTest is TestSetup {
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, true);
-        emit SettlementEngine.StalenessThresholdSet(1 hours, newThreshold);
+        emit ISettlementEngine.StalenessThresholdSet(1 hours, newThreshold);
         settlementEngine.setStalenessThreshold(newThreshold);
         vm.stopPrank();
 
@@ -80,7 +82,7 @@ contract AdminPrivilegesTest is TestSetup {
         vm.startPrank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementEngine.SettlementEngine__ThresholdZero.selector
+                ISettlementEngine.SettlementEngine__ThresholdZero.selector
             )
         );
         settlementEngine.setStalenessThreshold(0);
@@ -180,7 +182,7 @@ contract AdminPrivilegesTest is TestSetup {
         vm.prank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementEngine.SettlementEngine__AddressZero.selector
+                ISettlementEngine.SettlementEngine__AddressZero.selector
             )
         );
         settlementEngine.upgradeToAndCall(address(0), "");

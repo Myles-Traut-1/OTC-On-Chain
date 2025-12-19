@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
-import {SettlementEngine} from "../../../src/contracts/SettlementEngine.sol";
+import {ISettlementEngine} from "../../../src/interfaces/ISettlementEngine.sol";
 
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {MockV3Aggregator} from "@chainlink/src/v0.8/tests/MockV3Aggregator.sol";
@@ -13,7 +13,7 @@ contract PricefeedTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                SettlementEngine.SettlementEngine__PriceFeedStale.selector
+                ISettlementEngine.SettlementEngine__PriceFeedStale.selector
             )
         );
         settlementEngine.getAmountOut(

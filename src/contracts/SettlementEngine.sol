@@ -20,32 +20,18 @@ import {
     AggregatorV3Interface
 } from "@chainlink/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
+import {ISettlementEngine} from "../interfaces/ISettlementEngine.sol";
 import {Orderbook} from "./Orderbook.sol";
 
 /// TODO: Add redundant price feeds
 /// TODO: Add support for fallback TWAP oracles
 contract SettlementEngine is
+    ISettlementEngine,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
     UUPSUpgradeable
 {
     using Math for uint256;
-
-    /*//////////////////////////////////////////////////////////////
-                                 ERRORS
-    //////////////////////////////////////////////////////////////*/
-    error SettlementEngine__AddressZero();
-    error SettlementEngine__PriceFeedStale();
-    error SettlementEngine__ThresholdZero();
-
-    /*//////////////////////////////////////////////////////////////
-                                 EVENTS
-    //////////////////////////////////////////////////////////////*/
-    event OrderbookSet(address indexed orderbook);
-    event StalenessThresholdSet(
-        uint256 previousThreshold,
-        uint256 newThreshold
-    );
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
