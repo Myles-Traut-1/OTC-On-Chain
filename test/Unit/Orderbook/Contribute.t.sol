@@ -377,7 +377,6 @@ contract ContributeTests is TestSetup {
 
         ethToTokenOfferId = _createAndReturnOffer(address(offeredToken), ETH);
 
-        uint256 makerEthBalanceBefore = maker.balance;
         uint256 takerEthBalanceBefore = taker1.balance;
 
         uint256 quote = settlementEngine.getAmountOut(

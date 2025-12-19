@@ -6,25 +6,34 @@ import {
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+    ReentrancyGuardUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {
-    Ownable2Step,
-    Ownable
-} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+    Ownable2StepUpgradeable,
+    OwnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {
+    PausableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {
+    UUPSUpgradeable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
-/// TODO: Add slippage checks in contribute function.
 /// TODO: Add signature verification for off-chain order creation / contribution.
 /// TODO: Add pricefeed validation when adding tokens.
 /// TODO: Add upgradeable functionality
 /// TODO: Add interfaces for all contracts
 
-contract Orderbook is ReentrancyGuard, Ownable2Step, Pausable {
+contract Orderbook is
+    ReentrancyGuardUpgradeable,
+    Ownable2StepUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -147,18 +156,31 @@ contract Orderbook is ReentrancyGuard, Ownable2Step, Pausable {
     SettlementEngine public settlementEngine;
     Escrow public escrow;
 
+    uint256[50] private __gap;
+
     /*//////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(
         address _settlementEngine,
         address _escrow
     )
-        Ownable(msg.sender)
+        public
         checkZeroAddress(_settlementEngine)
         checkZeroAddress(_escrow)
+        initializer
     {
+        __Ownable_init(msg.sender);
+        __Pausable_init();
+        __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
+
         settlementEngine = SettlementEngine(_settlementEngine);
         escrow = Escrow(payable(_escrow));
         nonce = 1;
@@ -204,6 +226,10 @@ contract Orderbook is ReentrancyGuard, Ownable2Step, Pausable {
     function unpause() external onlyOwner {
         _unpause();
     }
+
+    function _authorizeUpgrade(
+        address _newImplementation
+    ) internal override onlyOwner checkZeroAddress(_newImplementation) {}
 
     /*//////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS

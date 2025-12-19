@@ -181,4 +181,50 @@ contract AdminPrivilegesTest is TestSetup {
         );
         orderbook.unpause();
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                UPGRADE
+    //////////////////////////////////////////////////////////////*/
+
+    function test_UpgradeOrderbook() public {
+        OrderbookV2 newImplementation = new OrderbookV2();
+
+        vm.prank(owner);
+        orderbook.upgradeToAndCall(address(newImplementation), "");
+
+        assertEq(
+            OrderbookV2(address(orderbook)).version(),
+            "v2",
+            "Contract should be upgraded to new implementation"
+        );
+    }
+
+    /******* NEGATIVE TESTS ********/
+
+    function test_UpgradeReverts_NonOwner() public {
+        OrderbookV2 newImplementation = new OrderbookV2();
+
+        vm.prank(maker);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Ownable.OwnableUnauthorizedAccount.selector,
+                maker
+            )
+        );
+        orderbook.upgradeToAndCall(address(newImplementation), "");
+    }
+
+    function test_UpgradeReverts_ZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
+        );
+        orderbook.upgradeToAndCall(address(0), "");
+    }
+}
+
+contract OrderbookV2 is Orderbook {
+    function version() external pure returns (string memory) {
+        return "v2";
+    }
 }

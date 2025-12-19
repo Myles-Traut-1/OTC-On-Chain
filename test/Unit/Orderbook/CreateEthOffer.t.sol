@@ -253,14 +253,12 @@ contract CreateEthOfferTest is TestSetup {
                 validUntil
             );
 
-        vm.startPrank(owner);
+        Orderbook newOrderbook = deployer.deployOrderbook(owner);
 
+        vm.startPrank(owner);
         // Mock escrow to fail
         address mockEscrow = address(new MockEscrow());
-        Orderbook newOrderbook = new Orderbook(
-            address(settlementEngine),
-            mockEscrow
-        );
+        newOrderbook.initialize(address(settlementEngine), mockEscrow);
         newOrderbook.addToken(
             address(requestedToken),
             address(requestedTokenEthFeed)
