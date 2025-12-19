@@ -15,6 +15,10 @@ contract Deployer is Script {
     UUPSProxy public orderbookProxy;
 
     Escrow public escrow;
+    Escrow public escrowImplementation;
+
+    UUPSProxy public escrowProxy;
+
     SettlementEngine public settlementEngine;
 
     function run(
@@ -26,9 +30,12 @@ contract Deployer is Script {
         settlementEngine = _deploySettlementEngine();
         orderbook = _deployOrderbook();
 
-        _initContracts(address(settlementEngine), address(escrow));
+        _initContracts(
+            address(orderbook),
+            address(settlementEngine),
+            address(escrow)
+        );
 
-        escrow.setOrderbook(address(orderbook));
         settlementEngine.setOrderbook(address(orderbook));
 
         vm.stopBroadcast();
@@ -48,7 +55,9 @@ contract Deployer is Script {
     //////////////////////////////////////////////////////////////*/
 
     function _deployEscrow() internal returns (Escrow) {
-        escrow = new Escrow();
+        escrowImplementation = new Escrow();
+        escrowProxy = new UUPSProxy(address(escrowImplementation), "");
+        escrow = Escrow(payable(address(escrowProxy)));
         return escrow;
     }
 
@@ -65,9 +74,12 @@ contract Deployer is Script {
     }
 
     function _initContracts(
+        address _orderbook,
         address _settlementEngine,
         address _escrow
     ) internal {
         orderbook.initialize(_settlementEngine, _escrow);
+        escrow.initialize();
+        escrow.setOrderbook(_orderbook);
     }
 }

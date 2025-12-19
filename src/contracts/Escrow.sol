@@ -2,20 +2,24 @@
 pragma solidity 0.8.25;
 
 import {
-    Ownable2Step,
-    Ownable
-} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-
-import {Orderbook} from "./Orderbook.sol";
-
-import {
     SafeERC20,
     IERC20
 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import {
+    Ownable2StepUpgradeable,
+    OwnableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+
+import {
+    UUPSUpgradeable
+} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+import {Orderbook} from "./Orderbook.sol";
+
 /// TODO: Add pausable functionality
 /// TODO: Add upgradeable functionality
-contract Escrow is Ownable2Step {
+contract Escrow is Ownable2StepUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
@@ -60,13 +64,32 @@ contract Escrow is Ownable2Step {
     /// @dev receive is here to be able to receive ETH.
     /// @notice mapping used for internal accounting to prevent donation attacks.
     mapping(address token => uint256 balance) private tokenBalances;
+
+    uint256[50] private __gap;
+
+    /*//////////////////////////////////////////////////////////////
+                                RECEIVE
+    //////////////////////////////////////////////////////////////*/
+
     receive() external payable {}
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor() Ownable(msg.sender) {}
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                  INIT
+    //////////////////////////////////////////////////////////////*/
+
+    function initialize() public initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+    }
 
     /*//////////////////////////////////////////////////////////////
                             ADMIN FUNCTIONS
@@ -79,6 +102,10 @@ contract Escrow is Ownable2Step {
 
         emit OrderbookSet(_orderbook);
     }
+
+    function _authorizeUpgrade(
+        address _newImplementation
+    ) internal override onlyOwner checkZeroAddress(_newImplementation) {}
 
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS

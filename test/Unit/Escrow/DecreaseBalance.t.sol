@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Escrow} from "../../../src/contracts/Escrow.sol";
+import {UUPSProxy} from "../../../src/contracts/UUPSProxy.sol";
 
 contract EscrowHarness is Escrow {
     function exposedDecreaseBalance(address _token, uint256 _amount) external {
@@ -12,6 +13,8 @@ contract EscrowHarness is Escrow {
 
 contract DecreaseBalanceTest is TestSetup {
     EscrowHarness public escrowHarness;
+    EscrowHarness public escrowHarnessImplementation;
+    UUPSProxy public escrowHarnessProxy;
 
     function setUp() public override {
         super.setUp();
@@ -98,7 +101,16 @@ contract DecreaseBalanceTest is TestSetup {
                                 HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    function _deployHarness() internal returns (EscrowHarness _escrowHarness) {
-        _escrowHarness = new EscrowHarness();
+    function _deployHarness() internal returns (EscrowHarness) {
+        escrowHarnessImplementation = new EscrowHarness();
+        escrowHarnessProxy = new UUPSProxy(
+            address(escrowHarnessImplementation),
+            ""
+        );
+        EscrowHarness escrowHarness = EscrowHarness(
+            payable(address(escrowHarnessProxy))
+        );
+        escrowHarness.initialize();
+        return escrowHarness;
     }
 }
