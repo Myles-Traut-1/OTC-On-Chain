@@ -19,70 +19,22 @@ import {
     UUPSUpgradeable
 } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import {IOrderbook} from "../interfaces/IOrderbook.sol";
 import {Escrow} from "./Escrow.sol";
 import {SettlementEngine} from "./SettlementEngine.sol";
 
 /// @notice All Tokens need to have an ETH pricefeed as routing occurs via ETH for now.
 /// TODO: Add signature verification for off-chain order creation / contribution.
 /// TODO: Add pricefeed validation when adding tokens.
-/// TODO: Add interfaces for all contracts
 
 contract Orderbook is
+    IOrderbook,
     ReentrancyGuardUpgradeable,
     Ownable2StepUpgradeable,
     PausableUpgradeable,
     UUPSUpgradeable
 {
     using SafeERC20 for IERC20;
-
-    /*//////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    error Orderbook__OfferAlreadyExists(bytes32 orderId);
-    error Orderbook__ZeroAddress();
-    error Orderbook__InsufficientBalance();
-    error Orderbook__InvalidOfferAmount();
-    error Orderbook__InvalidConstraints(string reason);
-    error Orderbook__NotETH();
-    error Orderbook__ETHTransferFailed();
-    error Orderbook__NotOfferCreator();
-    error Orderbook__OfferNotOpenOrInProgress();
-    error Orderbook__InvalidOfferId();
-    error Orderbook__InvalidContribution(uint256 amount);
-    error Orderbook__SlippageExceeded();
-    error Orderbook__UnsupportedToken(address token);
-    error Orderbook__TokenAlreadyAdded(address token);
-    error Orderbook__SameTokens();
-
-    /*//////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
-
-    event SettlementEngineSet(address indexed settlementEngine);
-    event EscrowSet(address indexed escrow);
-    event OfferCreated(
-        bytes32 indexed orderId,
-        address indexed maker,
-        TokenAmount offer,
-        address requestedToken,
-        uint256 constraints
-    );
-    event OfferCancelled(bytes32 indexed orderId, address indexed maker);
-    event OfferConstraintsUpdated(
-        bytes32 indexed orderId,
-        address indexed maker,
-        uint256 newConstraints
-    );
-    event OfferContributed(
-        bytes32 indexed orderId,
-        address indexed taker,
-        uint256 amountIn,
-        uint256 amountOut
-    );
-    event OfferStatusUpdated(bytes32 indexed orderId, OfferStatus newStatus);
-    event TokenAdded(address indexed token, address indexed dataFeed);
-    event TokenRemoved(address indexed token);
 
     /*//////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -112,37 +64,6 @@ contract Orderbook is
     uint256 public constant MIN_OFFER_AMOUNT = 1e6; //Prevent griefing with dust offers
     uint256 public constant MAX_SLIPPAGE = 20; // Representing 2% (scaled by 1000)
     uint256 public constant SCALE = 1e3; // Scale factor for basis points calculations
-
-    /// @notice Lifecycle states tracked on-chain to prevent replays.
-    enum OfferStatus {
-        None,
-        Open,
-        InProgress,
-        Filled,
-        Cancelled,
-        Expired
-    }
-
-    struct Token {
-        address dataFeed;
-        bool isSupported;
-    }
-
-    /// @notice Asset definition with amount semantics.
-    struct TokenAmount {
-        address token;
-        uint256 amount;
-    }
-
-    /// @dev Constraints are packed into a single uint256 for gas efficiency.
-    /// @dev Constraintsts = uint64 validFrom | uint64 validUntil | uint128 maxSlippageBps
-    struct Offer {
-        address maker; // Maker address
-        TokenAmount offer; // Asset/amount maker is giving
-        address requestedToken; // Asset maker expects
-        uint256 constraints; // Packed constraints
-        uint256 remainingAmount; // Remaining amount to be filled
-    }
 
     /// @notice Offer Tracking.
     mapping(bytes32 offerId => OfferStatus status) public offerStatusById;

@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
-import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
@@ -44,14 +44,14 @@ contract UpdateConstraintsTest is TestSetup {
         vm.startPrank(maker);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferConstraintsUpdated(offerId, maker, newConstraints);
+        emit IOrderbook.OfferConstraintsUpdated(offerId, maker, newConstraints);
 
         orderbook.updateConstraints(offerId, newConstraints);
         vm.stopPrank();
 
         (
             address _maker,
-            Orderbook.TokenAmount memory tokenAmounts,
+            IOrderbook.TokenAmount memory tokenAmounts,
             address _requestedToken,
             uint256 updatedConstraints,
             uint256 remainingAmount
@@ -96,7 +96,7 @@ contract UpdateConstraintsTest is TestSetup {
 
         vm.startPrank(invalidCaller);
 
-        vm.expectRevert(Orderbook.Orderbook__NotOfferCreator.selector);
+        vm.expectRevert(IOrderbook.Orderbook__NotOfferCreator.selector);
         orderbook.updateConstraints(offerId, newConstraints);
     }
 
@@ -127,7 +127,9 @@ contract UpdateConstraintsTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
+        vm.expectRevert(
+            IOrderbook.Orderbook__OfferNotOpenOrInProgress.selector
+        );
         orderbook.updateConstraints(offerId, newConstraints);
         vm.stopPrank();
     }
@@ -148,7 +150,7 @@ contract UpdateConstraintsTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_FROM"
             )
         );
@@ -162,7 +164,7 @@ contract UpdateConstraintsTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_UNTIL"
             )
         );

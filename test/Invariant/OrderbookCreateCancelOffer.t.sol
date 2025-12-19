@@ -5,6 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {StdInvariant} from "forge-std/StdInvariant.sol";
 import {TestSetup} from "../TestSetup.t.sol";
 
+import {IOrderbook} from "../../src/interfaces/IOrderbook.sol";
+
 import {Orderbook} from "../../src/contracts/Orderbook.sol";
 import {Escrow} from "../../src/contracts/Escrow.sol";
 
@@ -101,9 +103,9 @@ contract CreateCancelOfferHandler is Test {
     )
         internal
         view
-        returns (Orderbook.TokenAmount memory offer, uint256 constraints)
+        returns (IOrderbook.TokenAmount memory offer, uint256 constraints)
     {
-        offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
+        offer = IOrderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = orderbook.encodeConstraints(
             uint64(_validFrom),
@@ -118,7 +120,7 @@ contract CreateCancelOfferHandler is Test {
         address _requestedToken,
         uint256 _amount
     ) internal returns (bytes32 orderId) {
-        Orderbook.TokenAmount memory offer;
+        IOrderbook.TokenAmount memory offer;
         uint256 constraints;
 
         if (_offeredToken == orderbook.ETH_ADDRESS()) {

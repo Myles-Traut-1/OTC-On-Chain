@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -58,7 +59,7 @@ contract ContributeTests is TestSetup {
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferContributed(
+        emit IOrderbook.OfferContributed(
             tokenOfferId,
             taker1,
             CONTRIBUTE_AMOUNT,
@@ -123,7 +124,7 @@ contract ContributeTests is TestSetup {
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferContributed(
+        emit IOrderbook.OfferContributed(
             ethOfferId,
             taker1,
             CONTRIBUTE_AMOUNT,
@@ -193,12 +194,11 @@ contract ContributeTests is TestSetup {
         (, , , , uint256 remainingAmountBefore) = orderbook.offers(
             tokenOfferId
         );
-        Orderbook.OfferStatus statusBefore = orderbook.offerStatusById(
+        IOrderbook.OfferStatus statusBefore = orderbook.offerStatusById(
             tokenOfferId
         );
         assertEq(remainingAmountBefore, OFFER_AMOUNT);
-        assert(statusBefore == Orderbook.OfferStatus.Open);
-
+        assert(statusBefore == IOrderbook.OfferStatus.Open);
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
         uint256 amountOut = orderbook.contribute(
@@ -211,10 +211,10 @@ contract ContributeTests is TestSetup {
         (, , , , uint256 remainingAmountAfter) = orderbook.offers(tokenOfferId);
         assertEq(remainingAmountAfter, OFFER_AMOUNT - amountOut);
 
-        Orderbook.OfferStatus statusAfter = orderbook.offerStatusById(
+        IOrderbook.OfferStatus statusAfter = orderbook.offerStatusById(
             tokenOfferId
         );
-        assert(statusAfter == Orderbook.OfferStatus.InProgress);
+        assert(statusAfter == IOrderbook.OfferStatus.InProgress);
     }
 
     function test_contribute_MultipleContributions() public {
@@ -289,12 +289,12 @@ contract ContributeTests is TestSetup {
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), excessiveContributeAmount);
         vm.expectEmit(false, false, false, true);
-        emit Orderbook.OfferStatusUpdated(
+        emit IOrderbook.OfferStatusUpdated(
             tokenOfferId,
-            Orderbook.OfferStatus.Filled
+            IOrderbook.OfferStatus.Filled
         );
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferContributed(
+        emit IOrderbook.OfferContributed(
             tokenOfferId,
             taker1,
             excessiveContributeAmount / 2,
@@ -327,10 +327,10 @@ contract ContributeTests is TestSetup {
             makerRequestedTokenBalanceBefore + (OFFER_AMOUNT * 2)
         );
 
-        Orderbook.OfferStatus statusAfter = orderbook.offerStatusById(
+        IOrderbook.OfferStatus statusAfter = orderbook.offerStatusById(
             tokenOfferId
         );
-        assert(statusAfter == Orderbook.OfferStatus.Filled);
+        assert(statusAfter == IOrderbook.OfferStatus.Filled);
     }
 
     function test_contribute_SucceedsMaximumSlippage() public {
@@ -410,7 +410,9 @@ contract ContributeTests is TestSetup {
         bytes32 invalidOfferId = bytes32("invalidOfferId");
 
         vm.startPrank(taker1);
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
+        vm.expectRevert(
+            IOrderbook.Orderbook__OfferNotOpenOrInProgress.selector
+        );
         orderbook.contribute(invalidOfferId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
     }
@@ -423,7 +425,7 @@ contract ContributeTests is TestSetup {
 
         assert(
             orderbook.offerStatusById(tokenOfferId) ==
-                Orderbook.OfferStatus.InProgress
+                IOrderbook.OfferStatus.InProgress
         );
 
         vm.prank(maker);
@@ -431,11 +433,13 @@ contract ContributeTests is TestSetup {
 
         assert(
             orderbook.offerStatusById(tokenOfferId) ==
-                Orderbook.OfferStatus.Cancelled
+                IOrderbook.OfferStatus.Cancelled
         );
 
         vm.startPrank(taker1);
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
+        vm.expectRevert(
+            IOrderbook.Orderbook__OfferNotOpenOrInProgress.selector
+        );
         orderbook.contribute(tokenOfferId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
     }
@@ -444,7 +448,7 @@ contract ContributeTests is TestSetup {
         vm.startPrank(taker1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidContribution.selector,
+                IOrderbook.Orderbook__InvalidContribution.selector,
                 0
             )
         );
@@ -465,7 +469,7 @@ contract ContributeTests is TestSetup {
         vm.startPrank(taker1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "OFFER_EXPIRED_OR_NOT_STARTED"
             )
         );
@@ -487,7 +491,7 @@ contract ContributeTests is TestSetup {
         vm.startPrank(taker1);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "OFFER_EXPIRED_OR_NOT_STARTED"
             )
         );
@@ -523,7 +527,7 @@ contract ContributeTests is TestSetup {
 
         vm.startPrank(taker1);
         requestedToken.approve(address(orderbook), CONTRIBUTE_AMOUNT);
-        vm.expectRevert(Orderbook.Orderbook__SlippageExceeded.selector);
+        vm.expectRevert(IOrderbook.Orderbook__SlippageExceeded.selector);
         // Call with normal quote which is now invalid due to price drop
         orderbook.contribute(offerId, CONTRIBUTE_AMOUNT, tokenQuote);
         vm.stopPrank();
@@ -544,7 +548,7 @@ contract ContributeTests is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidContribution.selector,
+                IOrderbook.Orderbook__InvalidContribution.selector,
                 5e14
             )
         );

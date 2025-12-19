@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
@@ -21,7 +22,7 @@ contract CreateEthOfferTest is TestSetup {
         assertEq(orderbook.nonce(), 1);
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -44,12 +45,12 @@ contract CreateEthOfferTest is TestSetup {
         vm.startPrank(maker);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferStatusUpdated(
+        emit IOrderbook.OfferStatusUpdated(
             expectedOfferId,
-            Orderbook.OfferStatus.Open
+            IOrderbook.OfferStatus.Open
         );
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferCreated(
+        emit IOrderbook.OfferCreated(
             expectedOfferId,
             maker,
             offer,
@@ -67,7 +68,7 @@ contract CreateEthOfferTest is TestSetup {
 
         (
             address maker_,
-            Orderbook.TokenAmount memory offer_,
+            IOrderbook.TokenAmount memory offer_,
             address requestedToken_,
             uint256 constraints_,
             uint256 remainingAmount
@@ -92,9 +93,9 @@ contract CreateEthOfferTest is TestSetup {
         assertEq(validFrom_, uint64(validFrom));
         assertEq(validUntil_, uint64(validUntil));
 
-        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+        IOrderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
 
-        assert(offerStatus == Orderbook.OfferStatus.Open);
+        assert(offerStatus == IOrderbook.OfferStatus.Open);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -103,7 +104,7 @@ contract CreateEthOfferTest is TestSetup {
 
     function test_CreateEthOffer_RevertsSameTokens() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -115,7 +116,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__SameTokens.selector);
+        vm.expectRevert(IOrderbook.Orderbook__SameTokens.selector);
         orderbook.createEthOffer{value: OFFER_AMOUNT}(offer, ETH, constraints);
 
         vm.stopPrank();
@@ -131,7 +132,7 @@ contract CreateEthOfferTest is TestSetup {
         assertFalse(isSupported);
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -144,7 +145,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.startPrank(maker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(requestedToken)
             )
         );
@@ -162,7 +163,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.stopPrank();
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -175,7 +176,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.startPrank(maker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 ETH
             )
         );
@@ -189,7 +190,7 @@ contract CreateEthOfferTest is TestSetup {
 
     function test_CreateEthOffer_Reverts_ZeroAddress() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -203,7 +204,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(0)
             )
         );
@@ -218,7 +219,7 @@ contract CreateEthOfferTest is TestSetup {
 
     function test_CreateEthOffer_Reverts_NotETH() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -230,7 +231,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__NotETH.selector);
+        vm.expectRevert(IOrderbook.Orderbook__NotETH.selector);
         orderbook.createEthOffer{value: OFFER_AMOUNT}(
             offer,
             address(requestedToken),
@@ -243,7 +244,7 @@ contract CreateEthOfferTest is TestSetup {
     function testCreateEthOffer_TransferFails() public {
         // Arrange
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -275,7 +276,7 @@ contract CreateEthOfferTest is TestSetup {
 
         // Act & Assert
         vm.startPrank(maker); // Simulate maker's call
-        vm.expectRevert(Orderbook.Orderbook__ETHTransferFailed.selector);
+        vm.expectRevert(IOrderbook.Orderbook__ETHTransferFailed.selector);
         newOrderbook.createEthOffer{value: offer.amount}(
             offer,
             address(requestedToken),
@@ -285,7 +286,7 @@ contract CreateEthOfferTest is TestSetup {
 
     function test_CreateEthOffer_Reverts_InvalidAmounts() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -297,7 +298,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.startPrank(maker);
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidOfferAmount.selector);
+        vm.expectRevert(IOrderbook.Orderbook__InvalidOfferAmount.selector);
         orderbook.createEthOffer{value: 0}(
             offer,
             address(requestedToken),
@@ -310,7 +311,7 @@ contract CreateEthOfferTest is TestSetup {
     function test_CreateEthOffer_Reverts_InvalidConstraints() public {
         vm.startPrank(maker);
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,
@@ -322,7 +323,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_FROM"
             )
         );
@@ -342,7 +343,7 @@ contract CreateEthOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_UNTIL"
             )
         );
@@ -360,7 +361,7 @@ contract CreateEthOfferTest is TestSetup {
         vm.stopPrank();
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 ETH,

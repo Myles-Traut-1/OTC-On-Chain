@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
-import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 contract Orderbook_GetOffer is TestSetup {
     function test_GetOfferReturnsOfferAndStatus() public {
@@ -11,14 +11,16 @@ contract Orderbook_GetOffer is TestSetup {
             address(requestedToken)
         );
 
-        (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
-            .getOffer(offerId);
+        (
+            IOrderbook.Offer memory offer,
+            IOrderbook.OfferStatus status
+        ) = orderbook.getOffer(offerId);
 
         assertEq(offer.maker, maker);
         assertEq(offer.offer.token, address(offeredToken));
         assertEq(offer.offer.amount, OFFER_AMOUNT);
         assertEq(offer.requestedToken, address(requestedToken));
-        assert(status == Orderbook.OfferStatus.Open);
+        assert(status == IOrderbook.OfferStatus.Open);
 
         (
             uint64 validFrom,
@@ -41,7 +43,7 @@ contract Orderbook_GetOffer is TestSetup {
         assertEq(offer.offer.token, address(ETH));
         assertEq(offer.offer.amount, OFFER_AMOUNT);
         assertEq(offer.requestedToken, address(requestedToken));
-        assert(status == Orderbook.OfferStatus.Open);
+        assert(status == IOrderbook.OfferStatus.Open);
 
         (validFrom, validUntil, maxSlippageBps) = orderbook.decodeConstraints(
             offer.constraints
@@ -58,7 +60,7 @@ contract Orderbook_GetOffer is TestSetup {
     function test_RevertWhen_InvalidOfferId() public {
         bytes32 invalidOfferId = keccak256(abi.encode("invalid offer id"));
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidOfferId.selector);
+        vm.expectRevert(IOrderbook.Orderbook__InvalidOfferId.selector);
         orderbook.getOffer(invalidOfferId);
     }
 }

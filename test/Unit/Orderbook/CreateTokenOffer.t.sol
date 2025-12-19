@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
@@ -21,7 +22,7 @@ contract CreateTokenOfferTest is TestSetup {
         assertEq(orderbook.nonce(), 1);
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -45,12 +46,12 @@ contract CreateTokenOfferTest is TestSetup {
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferStatusUpdated(
+        emit IOrderbook.OfferStatusUpdated(
             expectedOfferId,
-            Orderbook.OfferStatus.Open
+            IOrderbook.OfferStatus.Open
         );
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferCreated(
+        emit IOrderbook.OfferCreated(
             expectedOfferId,
             maker,
             offer,
@@ -72,7 +73,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         (
             address maker_,
-            Orderbook.TokenAmount memory offer_,
+            IOrderbook.TokenAmount memory offer_,
             address requestedToken_,
             uint256 constraints_,
             uint256 remainingAmount
@@ -97,9 +98,9 @@ contract CreateTokenOfferTest is TestSetup {
         assertEq(validFrom_, uint64(validFrom));
         assertEq(validUntil_, uint64(validUntil));
 
-        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+        IOrderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
 
-        assert(offerStatus == Orderbook.OfferStatus.Open);
+        assert(offerStatus == IOrderbook.OfferStatus.Open);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -108,7 +109,7 @@ contract CreateTokenOfferTest is TestSetup {
 
     function test_CreateTokenOffer_RevertsSameTokens() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -122,7 +123,7 @@ contract CreateTokenOfferTest is TestSetup {
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
         vm.expectRevert(
-            abi.encodeWithSelector(Orderbook.Orderbook__SameTokens.selector)
+            abi.encodeWithSelector(IOrderbook.Orderbook__SameTokens.selector)
         );
         orderbook.createTokenOffer(offer, address(offeredToken), constraints);
         vm.stopPrank();
@@ -137,7 +138,7 @@ contract CreateTokenOfferTest is TestSetup {
         assertFalse(isSupported);
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -150,7 +151,7 @@ contract CreateTokenOfferTest is TestSetup {
         vm.startPrank(maker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(requestedToken)
             )
         );
@@ -171,7 +172,7 @@ contract CreateTokenOfferTest is TestSetup {
         assertFalse(isSupported);
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -184,7 +185,7 @@ contract CreateTokenOfferTest is TestSetup {
         vm.startPrank(maker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(offeredToken)
             )
         );
@@ -194,7 +195,7 @@ contract CreateTokenOfferTest is TestSetup {
 
     function test_CreateTokenOffer_Reverts_ZeroAddress() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -209,7 +210,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(0)
             )
         );
@@ -225,7 +226,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(0)
             )
         );
@@ -234,7 +235,7 @@ contract CreateTokenOfferTest is TestSetup {
 
     function test_CreateTokenOffer_Reverts_InvalidAmounts() public {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -247,7 +248,7 @@ contract CreateTokenOfferTest is TestSetup {
         vm.startPrank(maker);
         offeredToken.approve(address(orderbook), OFFER_AMOUNT);
 
-        vm.expectRevert(Orderbook.Orderbook__InvalidOfferAmount.selector);
+        vm.expectRevert(IOrderbook.Orderbook__InvalidOfferAmount.selector);
         orderbook.createTokenOffer(offer, address(requestedToken), constraints);
         vm.stopPrank();
     }
@@ -256,7 +257,7 @@ contract CreateTokenOfferTest is TestSetup {
         vm.startPrank(maker);
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),
@@ -268,7 +269,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_FROM"
             )
         );
@@ -284,7 +285,7 @@ contract CreateTokenOfferTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__InvalidConstraints.selector,
+                IOrderbook.Orderbook__InvalidConstraints.selector,
                 "VALID_UNTIL"
             )
         );
@@ -298,7 +299,7 @@ contract CreateTokenOfferTest is TestSetup {
         vm.stopPrank();
 
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 address(offeredToken),

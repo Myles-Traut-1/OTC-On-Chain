@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 
@@ -37,7 +38,7 @@ contract AdminPrivilegesTest is TestSetup {
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, false);
-        emit Orderbook.TokenAdded(
+        emit IOrderbook.TokenAdded(
             address(newToken),
             address(offeredTokenEthFeed)
         );
@@ -88,12 +89,12 @@ contract AdminPrivilegesTest is TestSetup {
     function test_AddToken_RevertsOnZeroAddress() public {
         vm.startPrank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
+            abi.encodeWithSelector(IOrderbook.Orderbook__ZeroAddress.selector)
         );
         orderbook.addToken(address(0), address(offeredTokenEthFeed));
 
         vm.expectRevert(
-            abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
+            abi.encodeWithSelector(IOrderbook.Orderbook__ZeroAddress.selector)
         );
         orderbook.addToken(address(newToken), address(0));
         vm.stopPrank();
@@ -105,7 +106,7 @@ contract AdminPrivilegesTest is TestSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__TokenAlreadyAdded.selector,
+                IOrderbook.Orderbook__TokenAlreadyAdded.selector,
                 address(newToken)
             )
         );
@@ -128,7 +129,7 @@ contract AdminPrivilegesTest is TestSetup {
 
         vm.startPrank(owner);
         vm.expectEmit(true, false, false, false);
-        emit Orderbook.TokenRemoved(address(newToken));
+        emit IOrderbook.TokenRemoved(address(newToken));
         orderbook.removeToken(address(newToken));
         vm.stopPrank();
 
@@ -156,7 +157,7 @@ contract AdminPrivilegesTest is TestSetup {
         vm.startPrank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
-                Orderbook.Orderbook__UnsupportedToken.selector,
+                IOrderbook.Orderbook__UnsupportedToken.selector,
                 address(0)
             )
         );
@@ -251,7 +252,7 @@ contract AdminPrivilegesTest is TestSetup {
     function test_UpgradeReverts_ZeroAddress() public pauseContract {
         vm.prank(owner);
         vm.expectRevert(
-            abi.encodeWithSelector(Orderbook.Orderbook__ZeroAddress.selector)
+            abi.encodeWithSelector(IOrderbook.Orderbook__ZeroAddress.selector)
         );
         orderbook.upgradeToAndCall(address(0), "");
     }

@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {TestSetup} from "../../TestSetup.t.sol";
 import {Orderbook} from "../../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../../src/interfaces/IOrderbook.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -29,12 +30,12 @@ contract CancelOfferTest is TestSetup {
         assertEq(remainingAmount, OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferStatusUpdated(
+        emit IOrderbook.OfferStatusUpdated(
             offerId,
-            Orderbook.OfferStatus.Cancelled
+            IOrderbook.OfferStatus.Cancelled
         );
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferCancelled(offerId, maker);
+        emit IOrderbook.OfferCancelled(offerId, maker);
         orderbook.cancelOffer(offerId);
         vm.stopPrank();
 
@@ -44,8 +45,8 @@ contract CancelOfferTest is TestSetup {
         assertEq(escrowBalanceAfter, 0);
         assertEq(makerBalanceAfter, INITIAL_MAKER_BALANCE);
 
-        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
-        assert(offerStatus == Orderbook.OfferStatus.Cancelled);
+        IOrderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+        assert(offerStatus == IOrderbook.OfferStatus.Cancelled);
 
         (, , , , remainingAmount) = orderbook.offers(offerId);
         assertEq(remainingAmount, 0);
@@ -65,7 +66,7 @@ contract CancelOfferTest is TestSetup {
         assertEq(remainingAmount, OFFER_AMOUNT);
 
         vm.expectEmit(true, true, true, true);
-        emit Orderbook.OfferCancelled(offerId, maker);
+        emit IOrderbook.OfferCancelled(offerId, maker);
         orderbook.cancelOffer(offerId);
         vm.stopPrank();
 
@@ -75,8 +76,8 @@ contract CancelOfferTest is TestSetup {
         assertEq(escrowBalanceAfter, 0);
         assertEq(makerBalanceAfter, INITIAL_MAKER_BALANCE);
 
-        Orderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
-        assert(offerStatus == Orderbook.OfferStatus.Cancelled);
+        IOrderbook.OfferStatus offerStatus = orderbook.offerStatusById(offerId);
+        assert(offerStatus == IOrderbook.OfferStatus.Cancelled);
 
         (, , , , remainingAmount) = orderbook.offers(offerId);
         assertEq(remainingAmount, 0);
@@ -90,13 +91,13 @@ contract CancelOfferTest is TestSetup {
         (bytes32 offerId) = _createOffer(address(offeredToken));
 
         vm.startPrank(taker1);
-        vm.expectRevert(Orderbook.Orderbook__NotOfferCreator.selector);
+        vm.expectRevert(IOrderbook.Orderbook__NotOfferCreator.selector);
         orderbook.cancelOffer(offerId);
         vm.stopPrank();
 
         bytes32 invalidId = keccak256(abi.encodePacked("invalid"));
         vm.startPrank(maker);
-        vm.expectRevert(Orderbook.Orderbook__NotOfferCreator.selector);
+        vm.expectRevert(IOrderbook.Orderbook__NotOfferCreator.selector);
         orderbook.cancelOffer(invalidId);
         vm.stopPrank();
     }
@@ -109,7 +110,9 @@ contract CancelOfferTest is TestSetup {
         vm.stopPrank();
 
         vm.startPrank(maker);
-        vm.expectRevert(Orderbook.Orderbook__OfferNotOpenOrInProgress.selector);
+        vm.expectRevert(
+            IOrderbook.Orderbook__OfferNotOpenOrInProgress.selector
+        );
         orderbook.cancelOffer(offerId);
         vm.stopPrank();
     }
@@ -120,7 +123,7 @@ contract CancelOfferTest is TestSetup {
 
     function _createOffer(address _token) internal returns (bytes32 offerId) {
         (
-            Orderbook.TokenAmount memory offer,
+            IOrderbook.TokenAmount memory offer,
             uint256 constraints
         ) = _generateOfferAmountsAndConstraints(
                 _token,

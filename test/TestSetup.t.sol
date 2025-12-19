@@ -2,6 +2,9 @@
 pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
+
+import {IOrderbook} from "../src/interfaces/IOrderbook.sol";
+
 import {Orderbook} from "../src/contracts/Orderbook.sol";
 import {Escrow} from "../src/contracts/Escrow.sol";
 import {SettlementEngine} from "../src/contracts/SettlementEngine.sol";
@@ -67,9 +70,6 @@ contract TestSetup is Test {
 
         vm.startPrank(owner);
 
-        escrow.setOrderbook(address(orderbook));
-        settlementEngine.setOrderbook(address(orderbook));
-
         orderbook.addToken(address(offeredToken), address(offeredTokenEthFeed));
         orderbook.addToken(
             address(requestedToken),
@@ -107,9 +107,9 @@ contract TestSetup is Test {
     )
         internal
         view
-        returns (Orderbook.TokenAmount memory offer, uint256 constraints)
+        returns (IOrderbook.TokenAmount memory offer, uint256 constraints)
     {
-        offer = Orderbook.TokenAmount({token: _offeredToken, amount: _amount});
+        offer = IOrderbook.TokenAmount({token: _offeredToken, amount: _amount});
 
         constraints = orderbook.encodeConstraints(
             uint64(_validFrom),
@@ -123,7 +123,7 @@ contract TestSetup is Test {
         address _offeredToken,
         address _requestedToken
     ) internal returns (bytes32 orderId) {
-        Orderbook.TokenAmount memory offer;
+        IOrderbook.TokenAmount memory offer;
         uint256 constraints;
 
         if (_offeredToken == orderbook.ETH_ADDRESS()) {
@@ -170,7 +170,7 @@ contract TestSetup is Test {
         uint256 _validFrom,
         uint256 _validUntil
     ) internal returns (bytes32 orderId) {
-        Orderbook.TokenAmount memory offer;
+        IOrderbook.TokenAmount memory offer;
         uint256 constraints;
 
         if (_offeredToken == orderbook.ETH_ADDRESS()) {

@@ -2,7 +2,7 @@
 pragma solidity 0.8.25;
 
 import {TestSetup} from "../TestSetup.t.sol";
-import {Orderbook} from "../../src/contracts/Orderbook.sol";
+import {IOrderbook} from "../../src/interfaces/IOrderbook.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -54,7 +54,7 @@ contract OrderbookFuzzTest is TestSetup {
 
         vm.startPrank(maker);
 
-        Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
+        IOrderbook.TokenAmount memory _offer = IOrderbook.TokenAmount({
             token: address(offeredToken),
             amount: _offeredAmount
         });
@@ -76,8 +76,10 @@ contract OrderbookFuzzTest is TestSetup {
             constraints
         );
 
-        (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
-            .getOffer(offerId);
+        (
+            IOrderbook.Offer memory offer,
+            IOrderbook.OfferStatus status
+        ) = orderbook.getOffer(offerId);
 
         assertEq(
             offeredToken.balanceOf(maker),
@@ -94,7 +96,7 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(offer.offer.amount, _offeredAmount);
         assertEq(offer.constraints, constraints);
         assertEq(offer.requestedToken, address(requestedToken));
-        assert(status == Orderbook.OfferStatus.Open);
+        assert(status == IOrderbook.OfferStatus.Open);
 
         _assertConstraints(
             offer.constraints,
@@ -133,7 +135,7 @@ contract OrderbookFuzzTest is TestSetup {
         ); // 0.5% - 2%
 
         vm.startPrank(maker);
-        Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
+        IOrderbook.TokenAmount memory _offer = IOrderbook.TokenAmount({
             token: address(ETH),
             amount: _offeredAmount
         });
@@ -151,8 +153,10 @@ contract OrderbookFuzzTest is TestSetup {
         );
         vm.stopPrank();
 
-        (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
-            .getOffer(offerId);
+        (
+            IOrderbook.Offer memory offer,
+            IOrderbook.OfferStatus status
+        ) = orderbook.getOffer(offerId);
 
         assertEq(maker.balance, INITIAL_MAKER_BALANCE - _offeredAmount);
         assertEq(
@@ -165,7 +169,7 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(offer.offer.amount, _offeredAmount);
         assertEq(offer.constraints, constraints);
         assertEq(offer.requestedToken, address(requestedToken));
-        assert(status == Orderbook.OfferStatus.Open);
+        assert(status == IOrderbook.OfferStatus.Open);
 
         _assertConstraints(constraints, _validFrom, _validUntil, _slippageBps);
     }
@@ -177,7 +181,7 @@ contract OrderbookFuzzTest is TestSetup {
             INITIAL_MAKER_BALANCE
         );
 
-        Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
+        IOrderbook.TokenAmount memory _offer = IOrderbook.TokenAmount({
             token: address(ETH),
             amount: _offeredAmount
         });
@@ -196,8 +200,10 @@ contract OrderbookFuzzTest is TestSetup {
             constraints
         );
 
-        (Orderbook.Offer memory offer, Orderbook.OfferStatus status) = orderbook
-            .getOffer(offerId);
+        (
+            IOrderbook.Offer memory offer,
+            IOrderbook.OfferStatus status
+        ) = orderbook.getOffer(offerId);
 
         assertEq(
             address(escrow).balance,
@@ -213,15 +219,14 @@ contract OrderbookFuzzTest is TestSetup {
         assertEq(offer.offer.amount, _offeredAmount);
         assertEq(offer.constraints, constraints);
         assertEq(offer.requestedToken, address(requestedToken));
-        assert(status == Orderbook.OfferStatus.Open);
+        assert(status == IOrderbook.OfferStatus.Open);
 
         orderbook.cancelOffer(offerId);
 
-        (, Orderbook.OfferStatus updatedStatus) = orderbook.getOffer(offerId);
-
+        (, IOrderbook.OfferStatus updatedStatus) = orderbook.getOffer(offerId);
         vm.stopPrank();
 
-        assert(updatedStatus == Orderbook.OfferStatus.Cancelled);
+        assert(updatedStatus == IOrderbook.OfferStatus.Cancelled);
         assertEq(maker.balance, INITIAL_MAKER_BALANCE);
     }
 
@@ -232,7 +237,7 @@ contract OrderbookFuzzTest is TestSetup {
             INITIAL_MAKER_BALANCE
         );
 
-        Orderbook.TokenAmount memory _offer = Orderbook.TokenAmount({
+        IOrderbook.TokenAmount memory _offer = IOrderbook.TokenAmount({
             token: address(offeredToken),
             amount: _offeredAmount
         });
@@ -253,7 +258,7 @@ contract OrderbookFuzzTest is TestSetup {
             constraints
         );
 
-        (, Orderbook.OfferStatus status) = orderbook.getOffer(offerId);
+        (, IOrderbook.OfferStatus status) = orderbook.getOffer(offerId);
 
         assertEq(
             offeredToken.balanceOf(address(escrow)),
@@ -265,15 +270,14 @@ contract OrderbookFuzzTest is TestSetup {
             INITIAL_MAKER_BALANCE - _offeredAmount
         );
 
-        assert(status == Orderbook.OfferStatus.Open);
+        assert(status == IOrderbook.OfferStatus.Open);
 
         orderbook.cancelOffer(offerId);
 
-        (, Orderbook.OfferStatus updatedStatus) = orderbook.getOffer(offerId);
-
+        (, IOrderbook.OfferStatus updatedStatus) = orderbook.getOffer(offerId);
         vm.stopPrank();
 
-        assert(updatedStatus == Orderbook.OfferStatus.Cancelled);
+        assert(updatedStatus == IOrderbook.OfferStatus.Cancelled);
         assertEq(offeredToken.balanceOf(maker), INITIAL_MAKER_BALANCE);
     }
 
